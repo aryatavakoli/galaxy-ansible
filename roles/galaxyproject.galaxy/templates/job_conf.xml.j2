@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+{% import "macros.xml.j2" as macros with context %}
+<job_conf>
+    <plugins workers="2">
+{% if galaxy_extras_config_slurm %}
+        <plugin id="slurm" type="runner" load="galaxy.jobs.runners.slurm:SlurmJobRunner">
+            <param id="drmaa_library_path">/usr/lib/slurm-drmaa/lib/libdrmaa.so</param>
+{% if galaxy_minimum_version >= "17.09" %}
+            <param id="enabled" from_environ="GALAXY_RUNNERS_ENABLE_SLURM">true</param>
+{% endif %}
+        </plugin>
+{% endif %}
+
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner"/>
+    </plugins>
+    <!-- The default handler can be changed by specifying the GALAXY_HANDLERS_DEFAULT environment variable. -->
+    <!-- The default destination can be changed by specifying the GALAXY_DESTINATIONS_DEFAULT environment variable. -->
+    <destinations default_from_environ="GALAXY_DESTINATIONS_DEFAULT" default="{{ galaxy_extras_galaxy_destination_default }}">
+       
+  
+{% if galaxy_extras_config_slurm %}
+        {% call macros.destination("slurm_cluster", "slurm") %}
+            <param id="nativeSpecification" from_environ="NATIVE_SPEC">--ntasks={{ galaxy_extras_slurm_ntask }} --share</param>
+        {% endcall %}
+        <!-- Docker -->
+        
+
+{% endif %}
+
+        <!-- Following destinations send to basic Condor runner if no Docker image is available
+             otherwise they both use the Docker image - the first submits a normal Condor job
+             that will run Docker on the resulting worker node and the second uses Condor's
+             native Docker universe support.
+        -->
+       
+    </destinations>
+    <limits>
+    </limits>
+</job_conf>

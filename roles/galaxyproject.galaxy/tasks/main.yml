@@ -1,0 +1,76 @@
+---
+# main tasks file for galaxyprojectdotorg.galaxy
+
+# Deploy a Galaxy server
+#   https://wiki.galaxyproject.org/
+
+- include: clone.yml
+  when: galaxy_manage_clone
+  tags:
+    - galaxy_manage_clone
+
+- include: download.yml
+  when: not galaxy_manage_clone and galaxy_manage_download
+  tags:
+    - galaxy_manage_download
+    
+- name: copy config files to config location
+  synchronize:
+    src: "{{ galaxy_server_dir }}/config/"
+    dest: "{{ galaxy_config_dir }}/"
+    recursive: yes
+    rsync_opts: "--ignore-existing"
+  delegate_to: "{{ inventory_hostname }}"
+
+#- include: patch.yml
+
+- include: static_setup.yml
+  when: galaxy_manage_static_setup
+  tags: 
+   - galaxy_config_files
+
+- include: dependencies.yml
+  when: galaxy_fetch_dependencies
+
+- include: mutable_setup.yml
+  when: galaxy_manage_mutable_setup
+
+- include: database.yml
+  when: galaxy_manage_database
+
+- include: errordocs.yml
+  when: galaxy_manage_errordocs
+
+- name: Install supervisor galaxy config
+  become: yes
+  become_user: root
+  template:
+    src: "templates/{{ item }}.j2"
+    dest: "/etc/supervisord.d/{{ item }}.ini"
+  with_items: "{{ supervisor_configs }}"
+  notify:
+    - update supervisord
+
+- name: Install Galaxy logrotate config
+  become: yes
+  become_user: root
+  template:
+    src: "templates/galaxy-log-rotate.j2"
+    dest: "/etc/logrotate.d/galaxy"
+
+- name: Install nginx logrotate config
+  become: yes
+  become_user: root
+  template:
+    src: "templates/nginx-log-rotate.j2"
+    dest: "/etc/logrotate.d/nginx"
+
+- include: report.yml 
+#- include: slurm.yml
+
+- include: cron.yml
+
+- include: ./scripts.yml
+
+- include: user.yml
+  when: create_irida_user

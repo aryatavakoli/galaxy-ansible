@@ -1,0 +1,14 @@
+- name: Copy vidtd configuration
+  become: yes
+  become_user: root
+  template:
+    src: vidtd.conf.j2
+    dest: /etc/vidtd.conf
+
+- name: copy vidtd
+  become: yes
+  become_user: root
+  copy:
+    src: vidtd.py
+    dest: /usr/bin/vidtd
+    mode: 0755

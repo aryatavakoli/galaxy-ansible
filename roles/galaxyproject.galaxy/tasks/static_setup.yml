@@ -1,0 +1,203 @@
+---
+# Manage static Galaxy configuration files
+
+- name: Create Galaxy config dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - "{{ galaxy_config_dir }}"
+    - "{{ galaxy_shed_tools_dir }}"
+
+- name: Install additional Galaxy config files (static)
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    backup: yes
+    force: no
+  with_items: "{{ galaxy_config_files }}"
+
+- name: Install additional Galaxy config files (template)
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    backup: yes
+    force: no
+  with_items: "{{ galaxy_config_templates }}"
+
+- name: Create Galaxy configuration file
+  template:
+    src: "galaxy.yml.j2"
+    dest: "{{ galaxy_config_file }}"
+    backup: yes
+  notify:
+    - restart galaxy
+
+- name: Install auth configuration file
+  become: yes
+  become_user: "{{ galaxy_user }}"
+  template:
+    src: "auth_conf.xml.j2"
+    dest: "{{ galaxy_config_dir }}/auth_conf.xml"
+  when: ldap_enable == true
+  notify:
+    - restart galaxy
+
+- name: Symlink Galaxy config file to default location
+  file:
+    src: "{{ galaxy_config_file }}"
+    dest: "{{ galaxy_server_dir }}/config/galaxy.yml"
+    state: link
+    force: yes
+  notify:
+    - restart galaxy
+
+- name: Create tool_sheds_conf.xml
+  template:
+    src: templates/tool_sheds_conf.xml
+    dest: "{{ galaxy_config_dir }}/tool_sheds_conf.xml"
+
+- name: Copy tool_conf.xml from previous install
+  copy:
+    src: "{{ exists_previous.stat.lnk_source }}/config/tool_conf.xml"
+    dest: "{{ galaxy_config_dir }}/tool_conf.xml"
+  when: exists_previous.stat.islnk is defined and exists_previous.stat.islnk and exists_previous.stat.lnk_source != galaxy_real_dir
+  ignore_errors: yes
+
+- name: Create tool_conf.xml
+  template:
+    src: templates/tool_conf.xml
+    dest: "{{ galaxy_config_dir }}/tool_conf.xml"
+    force: no
+
+- name: Copy Shed_tool_conf.xml from previous install
+  copy:
+    src: "{{ exists_previous.stat.lnk_source }}/config/shed_tool_conf.xml"
+    dest: "{{ galaxy_config_dir }}/shed_tool_conf.xml"
+    remote_src: yes
+  when: exists_previous.stat.islnk is defined and exists_previous.stat.islnk and exists_previous.stat.lnk_source != galaxy_real_dir
+  ignore_errors: yes
+
+- name: Install shed_tool_conf.xml
+  template:
+    src: "shed_tool_conf.xml.j2"
+    dest: "{{ galaxy_config_dir }}/shed_tool_conf.xml"
+    force: no
+
+- name: Copy data_manager_conf.xml from previous install
+  copy:
+    src: "{{ exists_previous.stat.lnk_source }}/config/data_manager_conf.xml"
+    dest: "{{ galaxy_config_dir }}/data_manager_conf.xml"
+    remote_src: yes
+  when: exists_previous.stat.islnk is defined and exists_previous.stat.islnk and exists_previous.stat.lnk_source != galaxy_real_dir
+  ignore_errors: yes
+
+- name: Copy data_manager_conf.xml.sample to data_manager_conf.xml
+  copy:
+    src: "{{ galaxy_config_dir }}/data_manager_conf.xml.sample"
+    dest: "{{ galaxy_config_dir }}/data_manager_conf.xml"
+    remote_src: yes
+
+- name: Copy shed_data_manager_conf.xml from previous install
+  copy:
+    src: "{{ exists_previous.stat.lnk_source }}/config/shed_data_manager_conf.xml"
+    dest: "{{ galaxy_config_dir }}/shed_data_manager_conf.xml"
+    remote_src: yes
+  when: exists_previous.stat.islnk is defined and exists_previous.stat.islnk and exists_previous.stat.lnk_source != galaxy_real_dir
+  ignore_errors: yes
+
+- name: Copy shed_data_manager_conf.xml.sample to shed_data_manager_conf.xml
+  copy:
+    src: "{{ galaxy_config_dir }}/shed_data_manager_conf.xml.sample"
+    dest: "{{ galaxy_config_dir }}/shed_data_manager_conf.xml"
+    remote_src: yes
+    force: no
+
+- name: Copy migrated_tools_conf.xml.sample to migrated_tools_conf.xml
+  copy:
+    src: "{{ galaxy_config_dir }}/migrated_tools_conf.xml.sample"
+    dest: "{{ galaxy_config_dir }}/migrated_tools_conf.xml"
+    remote_src: yes
+
+- name: Copy shed_tool_data_table_conf.xml from previous install
+  copy:
+    src: "{{ exists_previous.stat.lnk_source }}/config/shed_tool_data_table_conf.xml"
+    dest: "{{ galaxy_config_dir }}/shed_tool_data_table_conf.xml"
+    remote_src: yes
+  when: exists_previous.stat.islnk is defined and exists_previous.stat.islnk and exists_previous.stat.lnk_source != galaxy_real_dir
+  ignore_errors: yes
+
+- name: Copy config/shed_tool_data_table_conf.xml.sample to shed_tool_data_table_conf.xml
+  copy:
+    src: "{{ galaxy_config_dir }}/shed_tool_data_table_conf.xml.sample"
+    dest: "{{ galaxy_config_dir }}/shed_tool_data_table_conf.xml"
+    remote_src: yes
+    force: no
+
+- name: Install tool_destinations.yml
+  template:
+    src: "tool_destinations.yml"
+    dest: "{{ galaxy_config_dir }}/tool_destinations.yml"
+    force: no
+
+- name: Install job_conf.xml
+  become: yes
+  become_user: "{{ galaxy_user }}"
+  template:
+    src: "job_conf.xml"
+    dest: "{{ galaxy_config_dir }}/job_conf.xml"
+  when: dev_env == false
+  notify:
+    - restart galaxy
+
+- name: Install welcome page
+  become: yes
+  become_user: "{{ galaxy_user }}"
+  template:
+    src: "welcome.html.j2"
+    dest: "{{ galaxy_server_dir }}/static/welcome.html"
+
+- name: Install node status page
+  become: yes
+  become_user: "{{ galaxy_user }}"
+  template:
+    src: "node_status.html.j2"
+    dest: "{{ galaxy_server_dir }}/static/node_status.html"
+
+- name: Install load graphs page
+  become: yes
+  become_user: "{{ galaxy_user }}"
+  template:
+    src: "graphs.html.j2"
+    dest: "{{ galaxy_server_dir }}/static/graphs.html"
+
+
+- name: Install welcome image
+  become: yes
+  become_user: "{{ galaxy_user }}"
+  copy:
+    src: "files/galaxyimage.jpg"
+    dest: "{{ galaxy_server_dir }}/static/galaxyimage.jpg"
+
+- name: Install feed background image
+  become: yes
+  become_user: "{{ galaxy_user }}"
+  copy:
+    src: "files/background.jpg"
+    dest: "{{ galaxy_server_dir }}/static/background.jpg"
+
+- name: Install error pages
+  become: yes
+  become_user: "{{ galaxy_user }}"
+  copy:
+    src: "files/error_page"
+    dest: "{{ galaxy_server_dir }}/static/"
+
+- name: Install `env.sh`
+  become: yes
+  become_user: "{{ galaxy_user }}"
+  template:
+    src: "env.sh.j2"
+    dest: "{{ galaxy_config_dir }}/env.sh"
+    force: no
+

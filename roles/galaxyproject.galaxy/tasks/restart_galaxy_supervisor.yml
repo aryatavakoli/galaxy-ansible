@@ -1,0 +1,5 @@
+#- name: Restart Galaxy
+#  supervisorctl: name="gx:galaxy" state=restarted
+#  ignore_errors: yes
+#  become: yes
+#  become_user: root

@@ -1,0 +1,130 @@
+# compress responses whenever possible
+gzip on;
+gzip_http_version 1.1;
+gzip_vary on;
+gzip_comp_level 4;
+gzip_proxied any;
+gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript;
+gzip_buffers 16 8k;
+
+upstream galaxy_report_app {
+        server localhost:9001;
+}
+
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name "{{ server_name }}";
+    uwsgi_read_timeout 1200;
+    uwsgi_buffers 32 8k;
+    uwsgi_buffer_size 8k;
+    proxy_read_timeout 240;
+    client_max_body_size 10G;
+    
+    #potential fix for /var/lib/nginx being constantly overwritten
+    client_body_temp_path /var/lib/nginx_tmp/ 1 2;
+    uwsgi_temp_path /var/lib/nginx_tmp/ 1 2;
+    proxy_temp_path /var/lib/nginx_tmp/ 1 2;
+
+    error_page 403 /403.html;
+    location = /403.html {
+        root {{ galaxy_server_dir }}/static/error_page;
+      }
+
+    error_page 404 /404.html;
+    location = /404.html {
+        root {{ galaxy_server_dir }}/static/error_page;
+      }
+
+    error_page 502 /502.html;
+    location = /502.html {
+        root {{ galaxy_server_dir }}/static/error_page;
+      }
+
+    error_page 504 /504.html;
+    location = /504.html {
+        root {{ galaxy_server_dir }}/static/error_page;
+      }
+
+    location / {
+        #proxy_pass          http://galaxy;
+        #proxy_set_header    X-Forwarded-Host $host;
+        #proxy_set_header    X-Forwarded-For  $proxy_add_x_forwarded_for;
+        uwsgi_pass           unix://{{ galaxy_common_dir }}/var/uwsgi.sock;
+        include              uwsgi_params;
+    }
+
+
+
+    location /static {
+        alias "{{ galaxy_server_dir }}/static";
+        expires 24h;
+    }
+
+    location /static/style {
+        alias "{{ galaxy_server_dir }}/static/style/blue";
+        expires 24h;
+    }
+
+    location /static/scripts {
+        alias "{{ galaxy_server_dir }}/static/scripts";
+        expires 24h;
+    }
+
+    location /static/welcome.html {
+        alias "{{ galaxy_server_dir }}/static/welcome.html";
+    }
+
+    # serve vis/IE plugin static content
+    location ~ ^/static/plugins/(?<plug_type>.+?)/(?<vis_name>.+?)/static/(?<static_file>.*?)$ {
+        alias "{{ galaxy_config_dir }}/plugins/$plug_type/$vis_name/static/$static_file";
+    }
+
+    location /robots.txt {
+        alias "{{ galaxy_server_dir }}/static/robots.txt";
+    }
+
+    location /favicon.ico {
+        alias "{{ galaxy_server_dir }}/static/favicon.ico";
+    }
+
+    location /_x_accel_redirect {
+        internal;
+        alias /;
+    }
+  location /gie_proxy {
+        proxy_pass http://localhost:8800/gie_proxy;
+        proxy_redirect off;
+    }
+
+    # Project Jupyter / IPython specific. Other IEs may require their own routes.
+    location ~ ^/gie_proxy/jupyter/(?<nbtype>[^/]+)/api/kernels(?<rest>.*?)$ {
+        proxy_pass http://localhost:8800/gie_proxy/jupyter/$nbtype/api/kernels$rest;
+        proxy_redirect off;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+    
+    location /reports {
+            auth_basic "Restricted";
+            auth_basic_user_file    {{ galaxy_common_dir }}/report.pass;
+            proxy_pass    http://galaxy_report_app;
+            proxy_set_header   X-Forwarded-Host $host;
+            proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+    }
+    location /reports/static {
+            alias "{{ galaxy_server_dir }}/static";
+            expires 24h;
+    }
+    location /reports/static/style {
+            alias "{{ galaxy_server_dir }}/static/style/blue";
+            expires 24h;
+    }
+    location /reports/static/scripts {
+            alias "{{ galaxy_server_dir }}/static/scripts";
+            expires 24h;
+    }
+    
+
+}
