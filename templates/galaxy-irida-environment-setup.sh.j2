@@ -1,0 +1,33 @@
+#!/bin/bash
+
+SCRIPT_USER=`whoami | tr -d '\n'`
+if [ "$SCRIPT_USER" != "{{ galaxy_user }}" ];
+then
+	echo "The script must be run as the Galaxy user '{{ galaxy_user }}'"
+	exit 1
+fi
+
+CONDA_DIR={{ galaxy_common_dir }}/deps/_conda
+GALAXY_ENV_DIR=$CONDA_DIR/envs/galaxy
+GALAXY_ENV_BIN_DIR=$GALAXY_ENV_DIR/bin
+
+if [ ! -e $GALAXY_ENV_DIR ];
+then
+	echo "Creating Galaxy conda environment in $GALAXY_ENV_DIR"
+	$CONDA_DIR/bin/conda create -y -p $GALAXY_ENV_DIR python
+fi
+
+echo "Installing additional packages to conda environment $GALAXY_ENV_DIR"
+$GALAXY_ENV_BIN_DIR/conda install -c bioconda -c conda-forge -c defaults -y -p $GALAXY_ENV_DIR perl-xml-simple perl-time-piece perl-bioperl perl-data-dumper perl-readonly openjdk gnuplot libjpeg-turbo ncurses
+
+GALAXY_ENV_FILE={{ galaxy_config_dir }}/env.sh
+
+if ! grep --quiet "source activate $GALAXY_ENV_DIR" $GALAXY_ENV_FILE;
+then
+	echo "Adding line to load Galaxy conda environment to $GALAXY_ENV_FILE"
+
+	echo "export PATH=$CONDA_DIR/bin:\$PATH" >> $GALAXY_ENV_FILE
+	echo "source activate $GALAXY_ENV_DIR" >> $GALAXY_ENV_FILE
+else
+	echo "Line to load Galaxy conda environment already exists in $GALAXY_ENV_FILE"
+fi

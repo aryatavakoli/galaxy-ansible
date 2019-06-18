@@ -1,0 +1,13 @@
+#!/bin/bash
+
+echo "Checking if BioPerl is installed"
+if ! perl -MBio::Perl -e1;
+then
+	COMMAND="sudo cpanm Bio::Perl"
+	echo "BioPerl not installed. Installing with '$COMMAND'"
+	echo "You may have to re-run just this script as a user with 'sudo' privileges"
+	$COMMAND
+else
+	echo "BioPerl already installed"
+fi
+
