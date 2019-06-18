@@ -1,0 +1,44 @@
+#!/bin/bash
+
+SCRIPT_USER=`whoami | tr -d '\n'`
+if [ "$SCRIPT_USER" != "{{ galaxy_user }}" ];
+then
+	echo "The script must be run as the Galaxy user '{{ galaxy_user }}'"
+	exit 1
+fi
+
+CONDA_DIR={{ galaxy_common_dir }}/deps/_conda
+SHOVILL_DIR=$CONDA_DIR/envs/__shovill@0.9.0
+SHOVILL_BIN_DIR=$SHOVILL_DIR/bin
+SHOVILL_ENV_DIR=$SHOVILL_DIR/etc/conda
+
+echo "Activate conda environment from $SHOVILL_DIR"
+source $SHOVILL_BIN_DIR/activate $SHOVILL_DIR
+
+echo "Installing packages from conda-forge channel"
+conda install -y -c conda-forge ncurses bzip2
+
+if [ ! -e $SHOVILL_ENV_DIR/activate.d ];
+then
+	echo "Making directories in $SHOVILL_ENV_DIR"
+	mkdir -p $SHOVILL_ENV_DIR/{activate.d,deactivate.d}
+fi
+
+SHOVILL_RAM_LOAD_FILE=$SHOVILL_ENV_DIR/activate.d/shovill-ram.sh
+SHOVILL_RAM_UNLOAD_FILE=$SHOVILL_ENV_DIR/deactivate.d/shovill-ram.sh
+if [ ! -e $SHOVILL_RAM_LOAD_FILE ];
+then
+	echo "Making file $SHOVILL_RAM_LOAD_FILE" 
+	cat > $SHOVILL_RAM_LOAD_FILE <<- EOF
+	export _OLD_SHOVILL_RAM=\$SHOVILL_RAM
+	export SHOVILL_RAM=\$((\$GALAXY_MEMORY_MB/1024))
+	EOF
+
+	echo "Making file $SHOVILL_RAM_UNLOAD_FILE" 
+	cat > $SHOVILL_RAM_UNLOAD_FILE <<- EOF
+	export SHOVILL_RAM=\$_OLD_SHOVILL_RAM
+	EOF
+else
+	echo "Shovill environment files already exist in $SHOVILL_ENV_DIR, not writing"
+fi
+

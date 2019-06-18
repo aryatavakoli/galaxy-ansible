@@ -1,0 +1,27 @@
+#!/bin/bash
+
+SCRIPT_USER=`whoami | tr -d '\n'`
+if [ "$SCRIPT_USER" != "{{ galaxy_user }}" ];
+then
+	echo "The script must be run as the Galaxy user '{{ galaxy_user }}'"
+	exit 1
+fi
+
+CONDA_DIR={{ galaxy_common_dir }}/deps/_conda
+MENTALIST_DIR=$CONDA_DIR/envs/__mentalist\@0.1.9/
+MENTALIST_BIN_DIR=$CONDA_DIR/envs/__mentalist\@0.1.9/bin
+
+# If file is a link
+if [ -L "$MENTALIST_BIN_DIR/mentalist" ];
+then
+	echo "Modifying $MENTALIST_BIN_DIR/mentalist to include HOME"
+
+	mv $MENTALIST_BIN_DIR/mentalist $MENTALIST_BIN_DIR/mentalist.app
+	cat > $MENTALIST_BIN_DIR/mentalist <<- EOF
+	#!/bin/bash
+	export HOME=$HOME
+	mentalist.app "\$@"
+	EOF
+else
+	echo "$MENTALIST_BIN_DIR/mentalist already modified to include HOME"
+fi

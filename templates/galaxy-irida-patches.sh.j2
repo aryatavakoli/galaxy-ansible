@@ -1,0 +1,19 @@
+#!/bin/bash
+
+SCRIPT_USER=`whoami | tr -d '\n'`
+if [ "$SCRIPT_USER" != "{{ galaxy_user }}" ];
+then
+        echo "The script must be run as the Galaxy user '{{ galaxy_user }}'"
+        exit 1
+fi
+
+echo "Applying patches for the IRIDA Galaxy version"
+echo "Running 'galaxy-irida-shovill-fix.sh'"
+galaxy-irida-shovill-fix.sh
+echo "Running 'galaxy-irida-mentalist-fix.sh'"
+galaxy-irida-mentalist-fix.sh
+echo "Running 'galaxy-irida-environment-setup.sh'"
+galaxy-irida-environment-setup.sh
+
+echo "Done"
+echo "Please run 'galaxy-irida-install-bioperl.sh' manually as it must be run as an administrator."
