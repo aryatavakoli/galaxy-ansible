@@ -1,0 +1,30 @@
+---
+# defaults file for galaxyprojectdotorg.nginx
+
+- name: reload nginx
+  become: yes
+  become_user: root
+  service:
+    name: nginx
+    state: reloaded
+  when: not nginx_supervisor
+
+- name: restart nginx
+  become: yes
+  become_user: root
+  service:
+    name: nginx
+    state: restarted
+  when: not nginx_supervisor
+
+- name: supervisorctl reload nginx
+  # TODO: do this better
+  command: pkill -HUP nginx
+  when: nginx_supervisor and supervisord_prefix is defined
+
+- name: supervisorctl restart nginx
+  become: yes
+  become_user: "{{ galaxy_user }}"
+  supervisorctl:
+    name: nginx
+    state: restarted

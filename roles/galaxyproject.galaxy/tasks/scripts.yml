@@ -1,0 +1,9 @@
+- name: copy remove_old_new_jobs.sh
+  become: yes
+  become_user: "{{ galaxy_user }}"
+  copy:
+    dest: "{{ galaxy_root_dir }}/remove_old_new_jobs.sh"
+    owner: "{{ galaxy_user }}"
+    group: "{{ galaxy_user_group }}"
+    src: files/remove_old_new_jobs.sh.j2
+    mode: 0755

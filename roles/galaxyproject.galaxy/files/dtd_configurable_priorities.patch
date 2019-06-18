@@ -1,0 +1,2504 @@
+--- a/lib/galaxy/jobs/dynamic_tool_destination.py	2018-02-19 09:00:26.168168712 -0600
++++ b/lib/galaxy/jobs/dynamic_tool_destination.py	2018-02-19 07:31:19.364278989 -0600
+@@ -1,18 +1,20 @@
+ from __future__ import print_function
+ 
+-__version__ = '1.0.0'
+-
+-from yaml import load
+-
+ import argparse
++import collections
++import copy
++import json
+ import logging
+ import os
+-import sys
+-import copy
+-import collections
+ import re
++import sys
++import numpy as np
+ from functools import reduce
++from xml.etree import ElementTree as ET
++
++from yaml import load
+ 
++__version__ = '1.0.0'
+ 
+ # log to galaxy's logger
+ log = logging.getLogger(__name__)
+@@ -20,6 +22,23 @@
+ # does a lot more logging when set to true
+ verbose = True
+ 
++"""
++list of all valid priorities, inferred from the global
++default_desinations section of the config
++"""
++priority_list = set()
++
++"""
++list of all valid destinations, retrieved from the
++job configuration file
++"""
++destination_list = set()
++"""
++The largest the edit distance can be for a word to be considered
++A correction for another word.
++"""
++max_edit_dist = 2
++
+ 
+ class MalformedYMLException(Exception):
+     pass
+@@ -42,25 +61,27 @@
+ 
+ class RuleValidator:
+     """
+-    This class is the primary facility for validating configs. It's always called
+-    in map_tool_to_destination and it's called for validating config directly through
+-    DynamicToolDestination.py
++    This class is the primary facility for validating configs. It's always
++    called in map_tool_to_destination and it's called for validating config
++    directly through DynamicToolDestination.py
+     """
+ 
+     @classmethod
+     def validate_rule(cls, rule_type, return_bool=False, *args, **kwargs):
+         """
+-        This function is responsible for passing each rule to its relevant function.
++        This function is responsible for passing each rule to its relevant
++        function.
+ 
+         @type rule_type: str
+         @param rule_type: the current rule's type
+ 
+         @type return_bool: bool
+-        @param return_bool: True when we are only interested in the result of the
+-                              validation, and not the validated rule itself.
++        @param return_bool: True when we are only interested in the result of
++                            the validation, and not the validated rule itself.
+ 
+         @rtype: bool, dict (depending on return_bool)
+-        @return: validated rule or result of validation (depending on return_bool)
++        @return: validated rule or result of validation (depending on
++                 return_bool)
+         """
+         if rule_type == 'file_size':
+             return cls.__validate_file_size_rule(return_bool, *args, **kwargs)
+@@ -81,21 +102,22 @@
+         This function is responsible for validating 'file_size' rules.
+ 
+         @type return_bool: bool
+-        @param return_bool: True when we are only interested in the result of the
+-                              validation, and not the validated rule itself.
++        @param return_bool: True when we are only interested in the result of
++                            the validation, and not the validated rule itself.
+ 
+         @type original_rule: dict
+         @param original_rule: contains the original received rule
+ 
+         @type counter: int
+-        @param counter: this counter is used to identify what rule # is currently being
+-                        validated. Necessary for log output.
++        @param counter: this counter is used to identify what rule # is
++                        currently being validated. Necessary for log output.
+ 
+         @type tool: str
+         @param tool: the name of the current tool. Necessary for log output.
+ 
+         @rtype: bool, dict (depending on return_bool)
+-        @return: validated rule or result of validation (depending on return_bool)
++        @return: validated rule or result of validation (depending on
++                 return_bool)
+         """
+ 
+         rule = copy.deepcopy(original_rule)
+@@ -134,21 +156,22 @@
+         This function is responsible for validating 'num_input_datasets' rules.
+ 
+         @type return_bool: bool
+-        @param return_bool: True when we are only interested in the result of the
+-                              validation, and not the validated rule itself.
++        @param return_bool: True when we are only interested in the result of
++                            the validation, and not the validated rule itself.
+ 
+         @type original_rule: dict
+         @param original_rule: contains the original received rule
+ 
+         @type counter: int
+-        @param counter: this counter is used to identify what rule # is currently being
+-                        validated. Necessary for log output.
++        @param counter: this counter is used to identify what rule # is
++                        currently being validated. Necessary for log output.
+ 
+         @type tool: str
+         @param tool: the name of the current tool. Necessary for log output.
+ 
+         @rtype: bool, dict (depending on return_bool)
+-        @return: validated rule or result of validation (depending on return_bool)
++        @return: validated rule or result of validation (depending on
++                 return_bool)
+         """
+ 
+         rule = copy.deepcopy(original_rule)
+@@ -186,21 +209,22 @@
+         This function is responsible for validating 'records' rules.
+ 
+         @type return_bool: bool
+-        @param return_bool: True when we are only interested in the result of the
+-                              validation, and not the validated rule itself.
++        @param return_bool: True when we are only interested in the result of
++                            the validation, and not the validated rule itself.
+ 
+         @type original_rule: dict
+         @param original_rule: contains the original received rule
+ 
+         @type counter: int
+-        @param counter: this counter is used to identify what rule # is currently being
+-                        validated. Necessary for log output.
++        @param counter: this counter is used to identify what rule # is
++                        currently being validated. Necessary for log output.
+ 
+         @type tool: str
+         @param tool: the name of the current tool. Necessary for log output.
+ 
+         @rtype: bool, dict (depending on return_bool)
+-        @return: validated rule or result of validation (depending on return_bool)
++        @return: validated rule or result of validation (depending on
++                 return_bool)
+         """
+ 
+         rule = copy.deepcopy(original_rule)
+@@ -239,21 +263,22 @@
+         This is responsible for validating 'arguments' rules.
+ 
+         @type return_bool: bool
+-        @param return_bool: True when we are only interested in the result of the
+-                              validation, and not the validated rule itself.
++        @param return_bool: True when we are only interested in the result of
++                            the validation, and not the validated rule itself.
+ 
+         @type original_rule: dict
+         @param original_rule: contains the original received rule
+ 
+         @type counter: int
+-        @param counter: this counter is used to identify what rule # is currently being
+-                        validated. Necessary for log output.
++        @param counter: this counter is used to identify what rule # is
++                        currently being validated. Necessary for log output.
+ 
+         @type tool: str
+         @param tool: the name of the current tool. Necessary for log output.
+ 
+         @rtype: bool, dict (depending on return_bool)
+-        @return: validated rule or result of validation (depending on return_bool)
++        @return: validated rule or result of validation (depending on
++                return_bool)
+         """
+ 
+         rule = copy.deepcopy(original_rule)
+@@ -292,19 +317,19 @@
+         This function is responsible for validating nice_value.
+ 
+         @type return_bool: bool
+-        @param return_bool: True when we are only interested in the result of the
+-                              validation, and not the validated rule itself.
++        @param return_bool: True when we are only interested in the result of
++                            the validation, and not the validated rule itself.
+ 
+         @type valid_rule: bool
+-        @param valid_rule: returns True if everything is valid. False if it encounters any
+-                       abnormalities in the config.
++        @param valid_rule: returns True if everything is valid. False if it
++                           encounters any abnormalities in the config.
+ 
+         @type original_rule: dict
+         @param original_rule: contains the original received rule
+ 
+         @type counter: int
+-        @param counter: this counter is used to identify what rule # is currently being
+-                        validated. Necessary for log output.
++        @param counter: this counter is used to identify what rule # is
++                        currently being validated. Necessary for log output.
+ 
+         @type tool: str
+         @param tool: the name of the current tool. Necessary for log output.
+@@ -327,8 +352,8 @@
+                 valid_rule = False
+ 
+         else:
+-            error = "No nice_value found for rule " + str(counter) + " in '" + str(tool)
+-            error += "'."
++            error = "No nice_value found for rule " + str(counter) + " in '"
++            error += str(tool) + "'."
+             if not return_bool:
+                 error += " Setting nice_value to 0."
+                 rule["nice_value"] = 0
+@@ -344,19 +369,19 @@
+         This function is responsible for validating destination.
+ 
+         @type return_bool: bool
+-        @param return_bool: True when we are only interested in the result of the
+-                              validation, and not the validated rule itself.
++        @param return_bool: True when we are only interested in the result of
++                            the validation, and not the validated rule itself.
+ 
+         @type valid_rule: bool
+-        @param valid_rule: returns True if everything is valid. False if it encounters any
+-                       abnormalities in the config.
++        @param valid_rule: returns True if everything is valid. False if it
++                           encounters any abnormalities in the config.
+ 
+-        @type original_rule: dict
+-        @param original_rule: contains the original received rule
++        @type rule: dict
++        @param rule: contains the original received rule
+ 
+         @type counter: int
+-        @param counter: this counter is used to identify what rule # is currently being
+-                        validated. Necessary for log output.
++        @param counter: this counter is used to identify what rule # is
++                        currently being validated. Necessary for log output.
+ 
+         @type tool: str
+         @param tool: the name of the current tool. Necessary for log output.
+@@ -391,36 +416,67 @@
+                     if verbose:
+                         log.debug(error)
+                     valid_rule = False
++                elif (rule["destination"] not in destination_list
++                        and rule["destination"] != "fail"):
++                    error = "Destination for '" + str(tool) + "', rule "
++                    error += str(counter) + ": '"
++                    error += str(rule["destination"])
++                    error += "' does not exist in job configuration."
++                    suggestion = get_typo_correction(rule['destination'],
++                        destination_list, max_edit_dist)
++                    if suggestion is not None:
++                        error += " Did you mean '" + str(suggestion) + "'?"
++                    if not return_bool:
++                        error += " Ignoring..."
++                    if verbose:
++                        log.debug(error)
++                    valid_rule = False
++
+             elif isinstance(rule["destination"], dict):
+-                if ("priority" in rule["destination"] and isinstance(rule["destination"]["priority"], dict)):
+-                    if "med" not in rule["destination"]["priority"]:
+-                        error = "No 'med' priority destination for rule " + str(counter)
+-                        error += " in '" + str(tool) + "'."
+-                        if not return_bool:
+-                            error += " Ignoring..."
+-                        if verbose:
+-                            log.debug(error)
+-                        valid_rule = False
+-                    else:
+-                        for priority in rule["destination"]["priority"]:
+-                            if priority not in ["low", "med", "high"]:
+-                                error = "Invalid priority destination '" + str(priority)
+-                                error += "' for rule " + str(counter)
+-                                error += " in '" + str(tool) + "'."
+-                                if not return_bool:
+-                                    error += " Ignoring..."
+-                                if verbose:
+-                                    log.debug(error)
+-                                valid_rule = False
+-                            elif not isinstance(rule["destination"]["priority"][priority], str):
+-                                error = "No '" + str(priority)
+-                                error += "'priority destination for rule " + str(counter)
+-                                error += " in '" + str(tool) + "'."
+-                                if not return_bool:
+-                                    error += " Ignoring..."
+-                                if verbose:
+-                                    log.debug(error)
+-                                valid_rule = False
++                if ("priority" in rule["destination"]
++                        and isinstance(rule["destination"]["priority"], dict)):
++
++                    for priority in rule["destination"]["priority"]:
++                        if priority not in priority_list:
++                            error = "Invalid priority '"
++                            error += str(priority) + "' for rule "
++                            error += str(counter) + " in '" + str(tool) + "'."
++                            suggestion = get_typo_correction(priority,
++                                priority_list, max_edit_dist)
++                            if suggestion is not None:
++                                error += " Did you mean '" + str(suggestion) + "'?"
++                            if not return_bool:
++                                error += " Ignoring..."
++                            if verbose:
++                                log.debug(error)
++                            valid_rule = False
++
++                        elif not isinstance(rule["destination"]["priority"][priority], str):
++                            error = "Cannot parse tool destination '"
++                            error += str(rule["destination"]["priority"][priority])
++                            error += "' for rule " + str(counter)
++                            error += " in '" + str(tool) + "'."
++                            if not return_bool:
++                                error += " Ignoring..."
++                            if verbose:
++                                log.debug(error)
++                            valid_rule = False
++
++                        elif rule["destination"]["priority"][priority] not in destination_list:
++                            error = "Destination for '" + str(tool) + "', rule "
++                            error += str(counter) + ": '"
++                            error += str(rule["destination"]["priority"][priority])
++                            error += "' does not exist in job configuration."
++                            suggestion = get_typo_correction(rule["destination"]["priority"][priority],
++                                destination_list, max_edit_dist)
++                            if suggestion is not None:
++                                error += " Did you mean '" + str(suggestion) + "'?"
++                            if not return_bool:
++                                error += " Ignoring..."
++                            if verbose:
++                                log.debug(error)
++                            valid_rule = False
++
+                 else:
+                     error = "No destination specified for rule " + str(counter)
+                     error += " in '" + str(tool) + "'."
+@@ -454,19 +510,19 @@
+         This function is responsible for validating bounds.
+ 
+         @type return_bool: bool
+-        @param return_bool: True when we are only interested in the result of the
+-                              validation, and not the validated rule itself.
++        @param return_bool: True when we are only interested in the result of
++                            the validation, and not the validated rule itself.
+ 
+         @type valid_rule: bool
+-        @param valid_rule: returns True if everything is valid. False if it encounters any
+-                       abnormalities in the config.
++        @param valid_rule: returns True if everything is valid. False if it
++                           encounters any abnormalities in the config.
+ 
+         @type original_rule: dict
+         @param original_rule: contains the original received rule
+ 
+         @type counter: int
+-        @param counter: this counter is used to identify what rule # is currently being
+-                        validated. Necessary for log output.
++        @param counter: this counter is used to identify what rule # is
++                        currently being validated. Necessary for log output.
+ 
+         @type tool: str
+         @param tool: the name of the current tool. Necessary for log output.
+@@ -484,8 +540,8 @@
+                 lower_bound = rule["lower_bound"]
+ 
+             if lower_bound == "Infinity":
+-                error = "Error: lower_bound is set to Infinity, but must be lower than "
+-                error += "upper_bound!"
++                error = "Error: lower_bound is set to Infinity, but must be "
++                error += "lower than upper_bound!"
+                 if not return_bool:
+                     error += " Setting lower_bound to 0!"
+                     lower_bound = 0
+@@ -529,19 +585,19 @@
+         This function is responsible for validating arguments.
+ 
+         @type return_bool: bool
+-        @param return_bool: True when we are only interested in the result of the
+-                              validation, and not the validated rule itself.
++        @param return_bool: True when we are only interested in the result of
++                            the validation, and not the validated rule itself.
+ 
+         @type valid_rule: bool
+-        @param valid_rule: returns True if everything is valid. False if it encounters any
+-                       abnormalities in the config.
++        @param valid_rule: returns True if everything is valid. False if it
++                           encounters any abnormalities in the config.
+ 
+         @type original_rule: dict
+         @param original_rule: contains the original received rule
+ 
+         @type counter: int
+-        @param counter: this counter is used to identify what rule # is currently being
+-                        validated. Necessary for log output.
++        @param counter: this counter is used to identify what rule # is
++                        currently being validated. Necessary for log output.
+ 
+         @type tool: str
+         @param tool: the name of the current tool. Necessary for log output.
+@@ -568,19 +624,19 @@
+         This function is responsible for validating users (if present).
+ 
+         @type return_bool: bool
+-        @param return_bool: True when we are only interested in the result of the
+-                              validation, and not the validated rule itself.
++        @param return_bool: True when we are only interested in the result of
++                            the validation, and not the validated rule itself.
+ 
+         @type valid_rule: bool
+-        @param valid_rule: returns True if everything is valid. False if it encounters any
+-                       abnormalities in the config.
++        @param valid_rule: returns True if everything is valid. False if it
++                           encounters any abnormalities in the config.
+ 
+         @type original_rule: dict
+         @param original_rule: contains the original received rule
+ 
+         @type counter: int
+-        @param counter: this counter is used to identify what rule # is currently being
+-                        validated. Necessary for log output.
++        @param counter: this counter is used to identify what rule # is
++                        currently being validated. Necessary for log output.
+ 
+         @type tool: str
+         @param tool: the name of the current tool. Necessary for log output.
+@@ -596,8 +652,8 @@
+                 for user in reversed(rule["users"]):
+                     if not isinstance(user, str):
+                         error = "Entry '" + str(user) + "' in users for rule "
+-                        error += str(counter) + " in tool '" + str(tool) + "' is in an "
+-                        error += "invalid format!"
++                        error += str(counter) + " in tool '" + str(tool)
++                        error += "' is in an " + "invalid format!"
+                         if not return_bool:
+                             error += " Ignoring entry."
+                         if verbose:
+@@ -607,9 +663,9 @@
+ 
+                     else:
+                         if re.match(emailregex, user) is None:
+-                            error = "Supplied email '" + str(user) + "' for rule "
+-                            error += str(counter) + " in tool '" + str(tool) + "' is in "
+-                            error += "an invalid format!"
++                            error = "Supplied email '" + str(user)
++                            error += "' for rule " + str(counter) + " in tool '"
++                            error += str(tool) + "' is in " + "an invalid format!"
+                             if not return_bool:
+                                 error += " Ignoring email."
+                             if verbose:
+@@ -641,12 +697,16 @@
+         return valid_rule, rule
+ 
+ 
+-def parse_yaml(path="/config/tool_destinations.yml", test=False, return_bool=False):
++def parse_yaml(path="/config/tool_destinations.yml",
++               job_conf_path="/config/job_conf.xml", test=False, return_bool=False):
+     """
+     Get a yaml file from path and send it to validate_config for validation.
+ 
+     @type path: str
+-    @param path: the path to the config file
++    @param path: the path to the tool destinations config file
++
++    @type job_conf_path: str
++    @param job_conf_path: the path to the job config file
+ 
+     @type test: bool
+     @param test: indicates whether to run in test mode or production mode
+@@ -659,6 +719,11 @@
+     @return: validated rule or result of validation (depending on return_bool)
+ 
+     """
++
++    global destination_list
++    destination_list = get_destination_list_from_job_config(
++        job_config_location=job_conf_path)
++
+     # Import file from path
+     try:
+         if test:
+@@ -715,6 +780,9 @@
+     @return: validated rule or result of validation (depending on return_bool)
+     """
+ 
++    global priority_list
++    priority_list = set()
++
+     def infinite_defaultdict():
+         return collections.defaultdict(infinite_defaultdict)
+ 
+@@ -746,43 +814,94 @@
+     available_rule_types = ['file_size', 'num_input_datasets', 'records', 'arguments']
+ 
+     if obj is not None:
+-        # in obj, there should always be only 4 categories: tools, default_destination,
+-        # users, and verbose
++        # in obj, there should always be only 5 categories: tools, default_destination,
++        # default_priority, users, and verbose
+ 
+         if 'default_destination' in obj:
+             if isinstance(obj['default_destination'], str):
+-                new_config["default_destination"] = obj['default_destination']
++                if obj['default_destination'] in destination_list:
++                    new_config["default_destination"] = obj['default_destination']
++                else:
++                    error = ("Default destination '"
++                      + obj['default_destination']
++                      + "' does not appear in the job configuration.")
++                    suggestion = get_typo_correction(obj['default_destination'],
++                        destination_list, max_edit_dist)
++                    if suggestion is not None:
++                        error += " Did you mean '" + str(suggestion) + "'?"
++                    if verbose:
++                        log.debug(error)
++                    valid_config = False
+             elif isinstance(obj['default_destination'], dict):
+                 if ('priority' in obj['default_destination'] and
+                         isinstance(obj['default_destination']['priority'], dict)):
+-                    if 'med' not in obj['default_destination']['priority']:
+-                        error = "No default 'med' priority destination!"
++
++                    for priority in obj['default_destination']['priority']:
++                        if isinstance(obj['default_destination']['priority'][priority],
++                                      str):
++                            priority_list.add(priority)
++
++                            if obj['default_destination']['priority'][priority] in destination_list:
++                                new_config['default_destination']['priority'][priority] = obj[
++                                    'default_destination']['priority'][priority]
++                            else:
++                                error = ("Default destination '"
++                                  + obj['default_destination']['priority'][priority]
++                                  + "' does not appear in the job configuration.")
++                                suggestion = get_typo_correction(obj['default_destination']['priority'][priority],
++                                    destination_list, max_edit_dist)
++                                if suggestion is not None:
++                                    error += " Did you mean '" + str(suggestion) + "'?"
++                                if verbose:
++                                    log.debug(error)
++                                valid_config = False
++
++                        else:
++                            error = ("Invalid default priority destination '"
++                              + str(priority) + "' found in config!")
++                            if verbose:
++                                log.debug(error)
++                            valid_config = False
++
++                    if len(priority_list) < 1:
++                        error = ("No valid priorities found!")
+                         if verbose:
+                             log.debug(error)
+                         valid_config = False
+                     else:
+-                        for priority in obj['default_destination']['priority']:
+-                            if priority in ['low', 'med', 'high']:
+-                                if isinstance(
+-                                        obj['default_destination']['priority'][priority],
+-                                        str):
+-                                    new_config['default_destination']['priority'][
+-                                        priority] = obj[
+-                                            'default_destination']['priority'][priority]
++                        if 'default_priority' in obj:
++                            if isinstance(obj['default_priority'], str):
++                                if obj['default_priority'] in priority_list:
++                                    new_config['default_priority'] = obj['default_priority']
+                                 else:
+-                                    error = ("No default '" + str(priority) +
+-                                             "' priority destination in config!")
++                                    error = ("Default priority '" + str(obj['default_priority'])
++                                             + "' is not a valid priority.")
++                                    suggestion = get_typo_correction(obj['default_priority'],
++                                        priority_list, max_edit_dist)
++                                    if suggestion is not None:
++                                        error += " Did you mean '" + str(suggestion) + "'?"
+                                     if verbose:
+                                         log.debug(error)
+-                                    valid_config = False
+                             else:
+-                                error = ("Invalid default priority destination '" +
+-                                         str(priority) + "' found in config!")
++                                error = "default_priority in config is not valid."
+                                 if verbose:
+                                     log.debug(error)
+                                 valid_config = False
++                        else:
++                            error = "No default_priority section found in config."
++                            if 'med' in priority_list:
++                                # set 'med' as fallback default priority, so
++                                # old tool_destination.yml configs still work
++                                error += " Setting 'med' as default priority."
++                                new_config['default_priority'] = 'med'
++                            else:
++                                error += " Things may not run as expected!"
++                                valid_config = False
++                            if verbose:
++                                log.debug(error)
++
+                 else:
+-                    error = "No default priority destinations specified in config!"
++                    error = "No global default destinations specified in config!"
+                     if verbose:
+                         log.debug(error)
+                     valid_config = False
+@@ -791,6 +910,7 @@
+                 if verbose:
+                     log.debug(error)
+                 valid_config = False
++
+         else:
+             error = "No global default destination specified in config!"
+             if verbose:
+@@ -804,11 +924,17 @@
+ 
+                     if isinstance(curr, dict):
+                         if 'priority' in curr and isinstance(curr['priority'], str):
+-                            if curr['priority'] in ['low', 'med', 'high']:
++
++                            if curr['priority'] in priority_list:
+                                 new_config['users'][user]['priority'] = curr['priority']
+                             else:
+-                                error = ("User '" + user + "', priority is not valid!" +
+-                                         " Must be either low, med, or high.")
++                                error = ("User '" + user + "', priority '"
++                                  + str(curr['priority']) + "' is not defined "
++                                  + "in the global default_destination section")
++                                suggestion = get_typo_correction(curr['priority'],
++                                    priority_list, max_edit_dist)
++                                if suggestion is not None:
++                                    error += " Did you mean '" + str(suggestion) + "'?"
+                                 if verbose:
+                                     log.debug(error)
+                                 valid_config = False
+@@ -843,40 +969,65 @@
+                         # default_destination (not mandatory) and rules (mandatory)
+                         if "default_destination" in curr:
+                             if isinstance(curr['default_destination'], str):
+-                                new_config['tools'][tool]['default_destination'] = (curr['default_destination'])
+-                                tool_has_default = True
++                                if curr['default_destination'] in destination_list:
++                                    new_config['tools'][tool]['default_destination'] = (curr['default_destination'])
++                                    tool_has_default = True
++                                else:
++                                    error = ("Default destination for '"
++                                             + str(tool) + "': '"
++                                             + curr['default_destination']
++                                             + "' does not appear in the job configuration.")
++                                    suggestion = get_typo_correction(curr['default_destination'],
++                                        destination_list, max_edit_dist)
++                                    if suggestion is not None:
++                                        error += " Did you mean '" + str(suggestion) + "'?"
++                                    if verbose:
++                                        log.debug(error)
++                                    valid_config = False
+                             elif isinstance(curr['default_destination'], dict):
+-                                if ('priority' in curr['default_destination'] and isinstance(curr['default_destination']['priority'], dict)):
+-                                    if ('med' not in curr['default_destination']['priority']):
+-                                        error = "No default 'med' priority destination "
+-                                        error += "for " + str(tool) + "!"
+-                                        if verbose:
+-                                            log.debug(error)
+-                                        valid_config = False
+-                                    else:
+-                                        for priority in curr['default_destination']['priority']:
+-                                            destination = curr['default_destination']['priority'][priority]
+-                                            if priority in ['low', 'med', 'high']:
+-                                                if isinstance(destination, str):
+-                                                    new_config['tools'][tool]['default_destination']['priority'][priority] = destination
++
++                                if ('priority' in curr['default_destination']
++                                        and isinstance(curr['default_destination']['priority'], dict)):
++
++                                    for priority in curr['default_destination']['priority']:
++                                        destination = curr['default_destination']['priority'][priority]
++                                        if priority in priority_list:
++                                            if isinstance(destination, str):
++                                                if destination in destination_list:
++                                                    new_config['tools'][tool]['default_destination'][
++                                                        'priority'][priority] = destination
+                                                     tool_has_default = True
+                                                 else:
+-                                                    error = ("No default '" +
+-                                                             str(priority) +
+-                                                             "' priority destination " +
+-                                                             "for " + str(tool) +
+-                                                             " in config!")
++                                                    error = ("Default destination for '"
++                                                             + str(tool) + "': '"
++                                                             + destination + "' does not appear "
++                                                             + "in the job configuration.")
++                                                    suggestion = get_typo_correction(destination,
++                                                        destination_list, max_edit_dist)
++                                                    if suggestion is not None:
++                                                        error += " Did you mean '" + str(suggestion) + "'?"
+                                                     if verbose:
+                                                         log.debug(error)
+                                                     valid_config = False
+                                             else:
+-                                                error = ("Invalid default priority " +
+-                                                         "destination '" + str(priority) +
+-                                                         "' for " + str(tool) +
+-                                                         "found in config!")
++                                                error = ("No default '" + str(priority)
++                                                         + "' priority destination  for tool "
++                                                         + str(tool) + " in config!")
+                                                 if verbose:
+                                                     log.debug(error)
+                                                 valid_config = False
++
++                                        else:
++                                            error = ("Invalid default destination priority '"
++                                                     + str(priority) + "' for '" + str(tool)
++                                                     + "'.")
++                                            suggestion = get_typo_correction(priority,
++                                                priority_list, max_edit_dist)
++                                            if suggestion is not None:
++                                                error += " Did you mean '" + str(suggestion) + "'?"
++                                            if verbose:
++                                                log.debug(error)
++                                            valid_config = False
+                                 else:
+                                     error = "No default priority destinations specified"
+                                     error += " for " + str(tool) + " in config!"
+@@ -948,8 +1099,8 @@
+                         # if "rules" in curr and isinstance(curr['rules'], list):
+                         elif not tool_has_default:
+                             valid_config = False
+-                            error = "Tool '" + str(tool) + "' does not have rules nor a"
+-                            error += " default_destination!"
++                            error = "Tool '" + str(tool) + "' does not have"
++                            error += " rules nor a default_destination!"
+                             if verbose:
+                                 log.debug(error)
+ 
+@@ -973,8 +1124,9 @@
+ 
+         # quickly run through categories to detect unrecognized types
+         for category in obj.keys():
+-            if not (category == 'verbose' or category == 'tools' or
+-                    category == 'default_destination' or category == 'users'):
++            if not (category == 'verbose' or category == 'tools'
++                    or category == 'default_destination' or category == 'users'
++                    or category == 'default_priority'):
+                 error = "Unrecognized category '" + category
+                 error += "' found in config file!"
+                 if verbose:
+@@ -1104,7 +1256,7 @@
+     global JobDestination
+     global JobMappingException
+     if test:
+-        class JobDestionation(object):
++        class JobDestination(object):
+             def __init__(self, *kwd):
+                 self.id = kwd.get('id')
+                 self.nativeSpec = kwd.get('params')['nativeSpecification']
+@@ -1116,7 +1268,7 @@
+ 
+ 
+ def map_tool_to_destination(
+-        job, app, tool, user_email, test=False, path=None):
++        job, app, tool, user_email, test=False, path=None, job_conf_path=None):
+     """
+     Dynamically allocate resources
+ 
+@@ -1129,6 +1281,9 @@
+ 
+     @type path: str
+     @param path: path to tool_destinations.yml
++
++    @type job_conf_path: str
++    @param job_conf_path: path to job_conf.xml
+     """
+     importer(test)
+ 
+@@ -1140,12 +1295,14 @@
+     num_input_datasets_rule_present = False
+     records_rule_present = False
+ 
+-    # Get configuration from tool_destinations.yml
++    # Get configuration from tool_destinations.yml and job_conf.xml
+     if path is None:
+         path = app.config.tool_destinations_config_file
++    if job_conf_path is None:
++        job_conf_path = app.config.job_config_file
+ 
+     try:
+-        config = parse_yaml(path)
++        config = parse_yaml(path, job_conf_path)
+     except MalformedYMLException as e:
+         raise JobMappingException(e)
+ 
+@@ -1177,7 +1334,7 @@
+                     records += 1
+         except NameError:
+             pass
+-        # Loop through each input file and adds the size to the total
++        # Loops through each input file and adds the size to the total
+         # or looks through db for records
+         for da in inp_data:
+             try:
+@@ -1226,12 +1383,55 @@
+     # For each different rule for the tool that's running
+     fail_message = None
+ 
+-    # set default priority to med
+-    default_priority = 'med'
+-    priority = default_priority
++    if fail_message is not None:
++        destination = "fail"
++    elif config is not None:
+ 
+-    if config is not None:
+-        # get the users priority
++        # Get the default priority from the config if necessary.
++        # If there isn't one, choose an arbitrary one as a fallback
++        if "default_destination" in config:
++            if isinstance(config['default_destination'], dict):
++                if 'default_priority' in config:
++                    default_priority = config['default_priority']
++                    priority = default_priority
++
++                else:
++                    if len(priority_list) > 0:
++                        default_priority = next(iter(priority_list))
++                        priority = default_priority
++                        error = ("No default priority found, arbitrarily setting '"
++                                 + default_priority + "' as the default priority."
++                                 + " Things may not work as expected!")
++                        if verbose:
++                            log.debug(error)
++
++        # fetch priority information from workflow/job parameters
++        job_parameter_list = job.get_parameters()
++        workflow_params = None
++        job_params = None
++        if job_parameter_list is not None:
++            for param in job_parameter_list:
++                if param.name == "__workflow_resource_params__":
++                    workflow_params = param.value
++                if param.name == "__job_resource":
++                    job_params = param.value
++
++        # Priority coming from workflow invocation takes precedence over job specific priorities
++        if workflow_params is not None:
++            resource_params = json.loads(workflow_params)
++            if 'priority' in resource_params:
++                # For by_group mapping, this priority has already been validated when the
++                # request was created.
++                if resource_params['priority'] is not None:
++                    priority = resource_params['priority']
++
++        elif job_params is not None:
++            resource_params = json.loads(job_params)
++            if 'priority' in resource_params:
++                if resource_params['priority'] is not None:
++                    priority = resource_params['priority']
++
++        # get the user's priority
+         if "users" in config:
+             if user_email in config["users"]:
+                 priority = config["users"][user_email]["priority"]
+@@ -1242,7 +1442,7 @@
+             else:
+                 if priority in config['default_destination']['priority']:
+                     destination = config['default_destination']['priority'][priority]
+-                else:
++                elif default_priority in config['default_destination']['priority']:
+                     destination = (config['default_destination']['priority'][default_priority])
+             config = config['tools']
+             if str(tool.old_id) in config:
+@@ -1304,7 +1504,7 @@
+                                 matched = True
+                                 # check if the args in the config file are available
+                                 for arg in rule["arguments"]:
+-                                    arg_dict = {arg : rule["arguments"][arg]}
++                                    arg_dict = {arg: rule["arguments"][arg]}
+                                     arg_keys_list = []
+                                     get_keys_from_dict(arg_dict, arg_keys_list)
+                                     try:
+@@ -1321,7 +1521,8 @@
+ 
+                             # if we matched a rule
+                             if matched:
+-                                if (matched_rule is None or rule["nice_value"] < matched_rule["nice_value"]):
++                                if (matched_rule is None or rule["nice_value"]
++                                        < matched_rule["nice_value"]):
+                                     matched_rule = rule
+                         # if user_authorized
+                         else:
+@@ -1347,16 +1548,18 @@
+                     else:
+                         if priority in default_tool_destination['priority']:
+                             destination = default_tool_destination['priority'][priority]
+-                        else:
++                        elif default_priority in default_tool_destination['priority']:
+                             destination = (default_tool_destination['priority'][default_priority])
++                        # else global default destination is used
+             else:
+                 if isinstance(matched_rule["destination"], str):
+                     destination = matched_rule["destination"]
+                 else:
+                     if priority in matched_rule["destination"]["priority"]:
+                         destination = matched_rule["destination"]["priority"][priority]
+-                    else:
++                    elif default_priority in matched_rule["destination"]["priority"]:
+                         destination = (matched_rule["destination"]["priority"][default_priority])
++                    # else global default destination is used
+ 
+         # if "default_destination" in config
+         else:
+@@ -1364,7 +1567,8 @@
+             fail_message = "Job '" + str(tool.old_id) + "' failed; "
+             fail_message += "no global default destination specified in config!"
+ 
+-    # if config is not None
++    # if fail_message is not None
++    # elif config is not None
+     else:
+         destination = "fail"
+         fail_message = "No config file supplied!"
+@@ -1378,7 +1582,7 @@
+     if config is not None:
+         if destination == "fail":
+             output = "An error occurred: " + fail_message
+-
++            log.debug(output)
+         else:
+             output = "Running '" + str(tool.old_id) + "' with '"
+             output += destination + "'."
+@@ -1387,14 +1591,153 @@
+     return destination
+ 
+ 
++def get_destination_list_from_job_config(job_config_location='/config/job_conf.xml'):
++    """
++    returns A list of all destination IDs declared in the job configuration
++
++    @type job_config_location: str
++    @param job_config_location: The location of the job config file relative
++                to the galaxy root directory. Defaults to
++                galaxy/config/job_conf.xml
++
++    @rtype: list
++    @return: A list of all of the destination IDs declared in the job
++                configuration file.
++    """
++    global destination_list
++
++    # os.path.realpath gets the path of DynamicToolDestination.py
++    # and then os.path.join is used to go back four directories
++
++    if job_config_location == "/config/job_conf.xml":
++        config_location = os.path.join(
++            os.path.dirname(os.path.realpath(__file__)), '../../..')
++        job_config_location = config_location + job_config_location
++
++    job_conf = ET.parse(job_config_location)
++
++    # Add all destination IDs from the job configuration xml file
++    for destination in job_conf.getroot().iter("destination"):
++        if isinstance(destination.get("id"), str):
++            destination_list.add(destination.get("id"))
++
++        else:
++            error = "Destination ID '" + str(destination)
++            error += "' in job configuration file cannot be"
++            error += " parsed. Things may not work as expected!"
++            log.debug(error)
++
++    return destination_list
++
++
++def get_edit_distance(source, target):
++    """
++    returns the edit distance (levenshtein distance) between two strings.
++    code from:
++    en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Levenshtein_distance
++
++    @type str1: str
++    @param str1: The first string
++
++    @type str2: str
++    @param str2: The second string
++
++    @rtype: int
++    @return: The edit distance between str1 and str2
++    """
++
++    if len(source) < len(target):
++        return get_edit_distance(target, source)
++
++    # So now we have len(source) >= len(target).
++    if len(target) == 0:
++        return len(source)
++
++    # We call tuple() to force strings to be used as sequences
++    # ('c', 'a', 't', 's') - numpy uses them as values by default.
++    source = np.array(tuple(source))
++    target = np.array(tuple(target))
++
++    # We use a dynamic programming algorithm, but with the
++    # added optimization that we only need the last two rows
++    # of the matrix.
++    previous_row = np.arange(target.size + 1)
++    for s in source:
++        # Insertion (target grows longer than source):
++        current_row = previous_row + 1
++
++        # Substitution or matching:
++        # Target and source items are aligned, and either
++        # are different (cost of 1), or are the same (cost of 0).
++        current_row[1:] = np.minimum(
++            current_row[1:],
++            np.add(previous_row[:-1], target != s))
++
++        # Deletion (target grows shorter than source):
++        current_row[1:] = np.minimum(
++            current_row[1:],
++            current_row[0:-1] + 1)
++
++        previous_row = current_row
++
++    return previous_row[-1]
++
++
++def get_typo_correction(typo_str, word_set, max_dist):
++    """
++    returns the string in a set that closest matches the
++    input string, as long as the edit distance between them
++    is equal to or smaller than a value, or the words are
++    the same when case is not considered. If there are no
++    appropriate matches, nothing is returned instead.
++
++    @type typo_str: str
++    @param typo_str: The string to be compared
++
++    @type word_set: set of str
++    @param word_set: The set of strings to compare to
++
++    @type max_dist: int
++    @param max_dist: the largest allowed edit distance between
++                    the word and the result. If nothing is
++                    within this range, nothing is returned
++
++    @rtype: str or NoneType
++    @return: The closest matching string, or None, if no strings
++    being compared to are within max_dist edit distance.
++    """
++
++    # Start curr_best out as the largest
++    # edit distance we will tolerate plus one
++    curr_best = max_dist + 1
++    suggestion = None
++
++    for valid_word in word_set:
++        # If we've already found a best match,
++        # don't bother checking anything else.
++        if curr_best > 0:
++            if typo_str.lower() == valid_word.lower():
++                # if something matches when case insensitive,
++                # it is automatically set as the best
++                suggestion = valid_word
++                curr_best = 0
++            else:
++                edit_distance = get_edit_distance(typo_str, valid_word)
++                if edit_distance < curr_best:
++                    suggestion = valid_word
++                    curr_best = edit_distance
++
++    return suggestion
++
+ if __name__ == '__main__':
+     """
+-    This function is responsible for running the app if directly run through the
+-    commandline. It offers the ability to specify a config through the commandline
+-    for checking whether or not it is a valid config. It's to be run from within Galaxy,
+-    assuming it is installed correctly within the proper directories in Galaxy, and it
+-    looks for the config file in galaxy/config/. It can also be run with a path pointing
+-    to a config file if not being run directly from inside Galaxy install directory.
++    This function is responsible for running the app if directly run through
++    the commandline. It offers the ability to specify a config through the
++    commandline for checking whether or not it is a valid config. It's to be
++    run from within Galaxy, assuming it is installed correctly within the
++    proper directories in Galaxy, and it looks for the config file in
++    galaxy/config/. It can also be run with a path pointing to a config file if
++    not being run directly from inside Galaxy install directory.
+     """
+     verbose = True
+ 
+@@ -1403,9 +1746,14 @@
+ 
+     parser.add_argument(
+         '-c', '--check-config', dest='check_config', nargs='?',
+-        help='Use this option to validate tool_destinations.yml.' +
+-        ' Optionally, provide the path to the tool_destinations.yml' +
+-        ' that you would like to check. Default: galaxy/config/tool_destinations.yml')
++        help='Use this option to validate tool_destinations.yml.'
++             + ' Optionally, provide the path to the tool_destinations.yml'
++             + ' that you would like to check, and/or the path to the related'
++             + ' job_conf.xml. Default: galaxy/config/tool_destinations.yml and'
++             + ' galaxy/config/job_conf.xml')
++
++    parser.add_argument(
++        '-j', '--job-config', dest='job_config')
+ 
+     parser.add_argument(
+         '-V', '--version', action='version', version="%(prog)s " + __version__)
+@@ -1417,11 +1765,21 @@
+         parser.print_help()
+         sys.exit(1)
+ 
+-    if args.check_config:
+-        valid_config = parse_yaml(path=args.check_config, return_bool=True)
++    if args.check_config and args.job_config:
++        valid_config = parse_yaml(path=args.check_config,
++                                  job_conf_path=args.job_config, return_bool=True)
++
++    elif args.check_config:
++        valid_config = parse_yaml(path=args.check_config,
++                                  job_conf_path="/config/job_conf.xml", return_bool=True)
++
++    elif args.job_config:
++        valid_config = parse_yaml(path="/config/tool_destinations.yml",
++                                  job_conf_path=args.job_config, return_bool=True)
+ 
+     else:
+-        valid_config = parse_yaml(path="/config/tool_destinations.yml", return_bool=True)
++        valid_config = parse_yaml(path="/config/tool_destinations.yml",
++                                  job_conf_path="/config/job_conf.xml", return_bool=True)
+ 
+     if valid_config:
+         print("Configuration is valid!")
+diff -u -r a/test/unit/jobs/dynamic_tool_destination/data/job_conf.xml b/test/unit/jobs/dynamic_tool_destination/data/job_conf.xml
+--- a/test/unit/jobs/dynamic_tool_destination/data/job_conf.xml	2018-02-19 09:01:06.060167889 -0600
++++ b/test/unit/jobs/dynamic_tool_destination/data/job_conf.xml	2018-02-13 09:57:31.698789981 -0600
+@@ -0,0 +1,49 @@
++<?xml version="1.0"?>
++<!-- A sample job config that explicitly configures job running the way it is configured by default (if there is no explicit config). -->
++<job_conf>
++    <plugins>
++        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4"/>
++    </plugins>
++    <handlers>
++        <handler id="main"/>
++    </handlers>
++    <destinations>
++        <!-- destinations for galaxy unit test -->
++        <destination id="Destination1_high" runner="local"/>
++        <destination id="Destination1_med" runner="local"/>
++        <destination id="Destination1_low" runner="local"/>
++        <destination id="Destination1" runner="local"/>
++        <destination id="Destination2_high" runner="local"/>
++        <destination id="Destination2_med" runner="local"/>
++        <destination id="Destination2_low" runner="local"/>
++        <destination id="Destination2" runner="local"/>
++        <destination id="Destination3_high" runner="local"/>
++        <destination id="Destination3_med" runner="local"/>
++        <destination id="Destination3" runner="local"/>
++        <destination id="Destination3_low" runner="local"/>
++        <destination id="Destination4_high" runner="local"/>
++        <destination id="Destination4_med" runner="local"/>
++        <destination id="Destination4_low" runner="local"/>
++        <destination id="Destination4" runner="local"/>
++        <destination id="Destination5_high" runner="local"/>
++        <destination id="Destination5_med" runner="local"/>
++        <destination id="Destination5_low" runner="local"/>
++        <destination id="Destination5" runner="local"/>
++        <destination id="Destination6_med" runner="local"/>
++        <destination id="Destination6" runner="local"/>
++        <destination id="waffles_default_high" runner="local"/>
++        <destination id="waffles_default_med" runner="local"/>
++        <destination id="waffles_default_low" runner="local"/>
++        <destination id="waffles_high" runner="local"/>
++        <destination id="waffles_low" runner="local"/>
++        <destination id="waffles_low_4" runner="local"/>
++        <destination id="cluster_high_32" runner="local"/>
++        <destination id="cluster_low_4" runner="local"/>
++        <destination id="cluster_med_4" runner="local"/>
++        <destination id="waffles_default" runner="local"/>
++        <destination id="DestinationF" runner="local"/>
++        <destination id="lame_cluster" runner="local"/>
++        <destination id="even_lamer_cluster" runner="local"/>
++        <destination id="things" runner="local"/>
++    </destinations>
++</job_conf>
+diff -u -r a/test/unit/jobs/dynamic_tool_destination/mockGalaxy.py b/test/unit/jobs/dynamic_tool_destination/mockGalaxy.py
+--- a/test/unit/jobs/dynamic_tool_destination/mockGalaxy.py	2018-02-19 09:00:26.168168712 -0600
++++ b/test/unit/jobs/dynamic_tool_destination/mockGalaxy.py	2018-02-13 07:35:09.802966157 -0600
+@@ -7,6 +7,7 @@
+         self.input_datasets = []
+         self.input_library_datasets = []
+         self.param_values = dict()
++        self.parameters = []
+ 
+     def get_param_values(self, app, ignore_errors=False):
+         return self.param_values
+@@ -17,6 +18,9 @@
+     def add_input_dataset(self, dataset):
+         self.input_datasets.append(dataset)
+ 
++    def get_parameters(self):
++        return self.parameters
++
+ 
+ class InputDataset(object):
+     def __init__(self, name, dataset):
+diff -u -r a/test/unit/jobs/dynamic_tool_destination/test_dynamic_tool_destination.py b/test/unit/jobs/dynamic_tool_destination/test_dynamic_tool_destination.py
+--- a/test/unit/jobs/dynamic_tool_destination/test_dynamic_tool_destination.py	2018-02-19 09:00:26.168168712 -0600
++++ b/test/unit/jobs/dynamic_tool_destination/test_dynamic_tool_destination.py	2018-02-16 08:57:51.597517860 -0600
+@@ -7,7 +7,6 @@
+ import galaxy.jobs.dynamic_tool_destination as dt
+ from galaxy.jobs.dynamic_tool_destination import map_tool_to_destination
+ from galaxy.jobs.mapper import JobMappingException
+-
+ from . import mockGalaxy as mg
+ from . import ymltests as yt
+ 
+@@ -66,13 +65,14 @@
+ 
+ numinputsTool = mg.Tool('test_num_input_datasets')
+ 
+-# =======================YML file================================
++# =======================Configuration files================================
+ path = script_dir + "/data/tool_destination.yml"
+ priority_path = script_dir + "/data/priority_tool_destination.yml"
+ broken_default_dest_path = script_dir + "/data/dest_fail.yml"
+ no_verbose_path = script_dir + "/data/test_no_verbose.yml"
+ users_test_path = script_dir + "/data/test_users.yml"
+ num_input_datasets_test_path = script_dir + "/data/test_num_input_datasets.yml"
++job_conf_path = script_dir + "/data/job_conf.xml"
+ 
+ # ======================Test Variables=========================
+ value = 1
+@@ -95,20 +95,20 @@
+ 
+     @log_capture()
+     def test_brokenDestYML(self, l):
+-        self.assertRaises(JobMappingException, map_tool_to_destination, runJob, theApp, vanillaTool, "user@email.com", True, broken_default_dest_path)
++        self.assertRaises(JobMappingException, map_tool_to_destination, runJob, theApp, vanillaTool, "user@email.com", True, broken_default_dest_path, job_conf_path)
+ 
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'No global default destination specified in config!'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Loading file: input1' + script_dir + '/data/test3.full'),
+-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 3.23 KB')
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 3.23 KB'),
+         )
+ 
+     @log_capture()
+     def test_filesize_empty(self, l):
+-        self.assertRaises(JobMappingException, map_tool_to_destination, emptyJob, theApp, vanillaTool, "user@email.com", True, path)
+-        self.assertRaises(JobMappingException, map_tool_to_destination, emptyJob, theApp, vanillaTool, "user@email.com", True, priority_path)
++        self.assertRaises(JobMappingException, map_tool_to_destination, emptyJob, theApp, vanillaTool, "user@email.com", True, path, job_conf_path)
++        self.assertRaises(JobMappingException, map_tool_to_destination, emptyJob, theApp, vanillaTool, "user@email.com", True, priority_path, job_conf_path)
+ 
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+@@ -117,6 +117,7 @@
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 0.00 B'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total number of files: 1'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Loading file: input1' + script_dir + '/data/test.empty'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 0.00 B'),
+@@ -125,8 +126,8 @@
+ 
+     @log_capture()
+     def test_filesize_zero(self, l):
+-        self.assertRaises(JobMappingException, map_tool_to_destination, zeroJob, theApp, vanillaTool, "user@email.com", True, path)
+-        self.assertRaises(JobMappingException, map_tool_to_destination, zeroJob, theApp, vanillaTool, "user@email.com", True, priority_path)
++        self.assertRaises(JobMappingException, map_tool_to_destination, zeroJob, theApp, vanillaTool, "user@email.com", True, path, job_conf_path)
++        self.assertRaises(JobMappingException, map_tool_to_destination, zeroJob, theApp, vanillaTool, "user@email.com", True, priority_path, job_conf_path)
+ 
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+@@ -134,6 +135,7 @@
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 0.00 B'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total number of files: 0'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 0.00 B'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total number of files: 0')
+@@ -141,8 +143,8 @@
+ 
+     @log_capture()
+     def test_filesize_fail(self, l):
+-        self.assertRaises(JobMappingException, map_tool_to_destination, failJob, theApp, vanillaTool, "user@email.com", True, path)
+-        self.assertRaises(JobMappingException, map_tool_to_destination, failJob, theApp, vanillaTool, "user@email.com", True, priority_path)
++        self.assertRaises(JobMappingException, map_tool_to_destination, failJob, theApp, vanillaTool, "user@email.com", True, path, job_conf_path)
++        self.assertRaises(JobMappingException, map_tool_to_destination, failJob, theApp, vanillaTool, "user@email.com", True, priority_path, job_conf_path)
+ 
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+@@ -151,6 +153,7 @@
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 293.00 B'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total number of files: 1'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Loading file: input1' + script_dir + '/data/test1.full'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 293.00 B'),
+@@ -159,9 +162,9 @@
+ 
+     @log_capture()
+     def test_filesize_run(self, l):
+-        job = map_tool_to_destination(runJob, theApp, vanillaTool, "user@email.com", True, path)
++        job = map_tool_to_destination(runJob, theApp, vanillaTool, "user@email.com", True, path, job_conf_path)
+         self.assertEquals(job, 'Destination1')
+-        priority_job = map_tool_to_destination(runJob, theApp, vanillaTool, "user@email.com", True, priority_path)
++        priority_job = map_tool_to_destination(runJob, theApp, vanillaTool, "user@email.com", True, priority_path, job_conf_path)
+         self.assertEquals(priority_job, 'Destination1_high')
+ 
+         l.check(
+@@ -172,6 +175,7 @@
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total number of files: 1'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test' with 'Destination1'."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Loading file: input1' + script_dir + '/data/test3.full'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 3.23 KB'),
+@@ -181,9 +185,9 @@
+ 
+     @log_capture()
+     def test_default_tool(self, l):
+-        job = map_tool_to_destination(runJob, theApp, defaultTool, "user@email.com", True, path)
++        job = map_tool_to_destination(runJob, theApp, defaultTool, "user@email.com", True, path, job_conf_path)
+         self.assertEquals(job, 'waffles_default')
+-        priority_job = map_tool_to_destination(runJob, theApp, defaultTool, "user@email.com", True, priority_path)
++        priority_job = map_tool_to_destination(runJob, theApp, defaultTool, "user@email.com", True, priority_path, job_conf_path)
+         self.assertEquals(priority_job, 'waffles_default_high')
+ 
+         l.check(
+@@ -192,6 +196,7 @@
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'test_tooldefault' not specified in config. Using default destination."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_tooldefault' with 'waffles_default'."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'test_tooldefault' not specified in config. Using default destination."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_tooldefault' with 'waffles_default_high'.")
+@@ -199,9 +204,9 @@
+ 
+     @log_capture()
+     def test_arguments_tool(self, l):
+-        job = map_tool_to_destination(argJob, theApp, argTool, "user@email.com", True, path)
++        job = map_tool_to_destination(argJob, theApp, argTool, "user@email.com", True, path, job_conf_path)
+         self.assertEquals(job, 'Destination6')
+-        priority_job = map_tool_to_destination(argJob, theApp, argTool, "user@email.com", True, priority_path)
++        priority_job = map_tool_to_destination(argJob, theApp, argTool, "user@email.com", True, priority_path, job_conf_path)
+         self.assertEquals(priority_job, 'Destination6_med')
+ 
+         l.check(
+@@ -209,15 +214,16 @@
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_arguments' with 'Destination6'."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_arguments' with 'Destination6_med'.")
+         )
+ 
+     @log_capture()
+     def test_arguments_arg_not_found(self, l):
+-        job = map_tool_to_destination(argNotFoundJob, theApp, argTool, "user@email.com", True, path)
++        job = map_tool_to_destination(argNotFoundJob, theApp, argTool, "user@email.com", True, path, job_conf_path)
+         self.assertEquals(job, 'waffles_default')
+-        priority_job = map_tool_to_destination(argNotFoundJob, theApp, argTool, "user@email.com", True, priority_path)
++        priority_job = map_tool_to_destination(argNotFoundJob, theApp, argTool, "user@email.com", True, priority_path, job_conf_path)
+         self.assertEquals(priority_job, 'waffles_default_high')
+ 
+         l.check(
+@@ -225,15 +231,16 @@
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_arguments' with 'waffles_default'."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_arguments' with 'waffles_default_high'.")
+         )
+ 
+     @log_capture()
+     def test_tool_not_found(self, l):
+-        job = map_tool_to_destination(runJob, theApp, unTool, "user@email.com", True, path)
++        job = map_tool_to_destination(runJob, theApp, unTool, "user@email.com", True, path, job_conf_path)
+         self.assertEquals(job, 'waffles_default')
+-        priority_job = map_tool_to_destination(runJob, theApp, unTool, "user@email.com", True, priority_path)
++        priority_job = map_tool_to_destination(runJob, theApp, unTool, "user@email.com", True, priority_path, job_conf_path)
+         self.assertEquals(priority_job, 'waffles_default_high')
+ 
+         l.check(
+@@ -242,6 +249,7 @@
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'unregistered' not specified in config. Using default destination."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'unregistered' with 'waffles_default'."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'unregistered' not specified in config. Using default destination."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'unregistered' with 'waffles_default_high'.")
+@@ -249,9 +257,9 @@
+ 
+     @log_capture()
+     def test_fasta(self, l):
+-        job = map_tool_to_destination(dbJob, theApp, dbTool, "user@email.com", True, path)
++        job = map_tool_to_destination(dbJob, theApp, dbTool, "user@email.com", True, path, job_conf_path)
+         self.assertEquals(job, 'Destination4')
+-        priority_job = map_tool_to_destination(dbJob, theApp, dbTool, "user@email.com", True, priority_path)
++        priority_job = map_tool_to_destination(dbJob, theApp, dbTool, "user@email.com", True, priority_path, job_conf_path)
+         self.assertEquals(priority_job, 'Destination4_high')
+ 
+         l.check(
+@@ -261,6 +269,7 @@
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total amount of records: 10'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_db' with 'Destination4'."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Loading file: input1' + script_dir + '/data/test.fasta'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total amount of records: 10'),
+@@ -269,9 +278,9 @@
+ 
+     @log_capture()
+     def test_fasta_count(self, l):
+-        job = map_tool_to_destination(dbcountJob, theApp, dbTool, "user@email.com", True, path)
++        job = map_tool_to_destination(dbcountJob, theApp, dbTool, "user@email.com", True, path, job_conf_path)
+         self.assertEquals(job, 'Destination4')
+-        priority_job = map_tool_to_destination(dbcountJob, theApp, dbTool, "user@email.com", True, priority_path)
++        priority_job = map_tool_to_destination(dbcountJob, theApp, dbTool, "user@email.com", True, priority_path, job_conf_path)
+         self.assertEquals(priority_job, 'Destination4_high')
+ 
+         l.check(
+@@ -281,6 +290,7 @@
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total amount of records: 6'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_db' with 'Destination4'."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Loading file: input1' + script_dir + '/data/test.fasta'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total amount of records: 6'),
+@@ -289,7 +299,7 @@
+ 
+     @log_capture()
+     def test_no_verbose(self, l):
+-        job = map_tool_to_destination(runJob, theApp, noVBTool, "user@email.com", True, no_verbose_path)
++        job = map_tool_to_destination(runJob, theApp, noVBTool, "user@email.com", True, no_verbose_path, job_conf_path)
+         self.assertEquals(job, 'Destination1')
+ 
+         l.check(
+@@ -298,7 +308,7 @@
+ 
+     @log_capture()
+     def test_authorized_user(self, l):
+-        job = map_tool_to_destination(runJob, theApp, usersTool, "user@email.com", True, users_test_path)
++        job = map_tool_to_destination(runJob, theApp, usersTool, "user@email.com", True, users_test_path, job_conf_path)
+         self.assertEquals(job, 'special_cluster')
+ 
+         l.check(
+@@ -307,7 +317,7 @@
+ 
+     @log_capture()
+     def test_unauthorized_user(self, l):
+-        job = map_tool_to_destination(runJob, theApp, usersTool, "userblah@email.com", True, users_test_path)
++        job = map_tool_to_destination(runJob, theApp, usersTool, "userblah@email.com", True, users_test_path, job_conf_path)
+         self.assertEquals(job, 'lame_cluster')
+ 
+         l.check(
+@@ -323,7 +333,7 @@
+ 
+     @log_capture()
+     def test_bad_nice(self, l):
+-        dt.parse_yaml(path=yt.ivYMLTest11, test=True)
++        dt.parse_yaml(path=yt.ivYMLTest11, job_conf_path=job_conf_path, test=True)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG',
+              "Running config validation..."),
+@@ -334,11 +344,11 @@
+ 
+     @log_capture()
+     def test_empty_file(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest2, test=True), {})
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest2, job_conf_path=job_conf_path, test=True), {})
+ 
+     @log_capture()
+     def test_no_tool_name(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest3, test=True), yt.iv3dict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest3, job_conf_path=job_conf_path, test=True), yt.iv3dict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Malformed YML; expected job name, but found a list instead!'),
+@@ -347,7 +357,7 @@
+ 
+     @log_capture()
+     def test_no_rule_type(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest4, test=True), yt.ivDict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest4, job_conf_path=job_conf_path, test=True), yt.ivDict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No rule_type found for rule 1 in 'spades'."),
+@@ -356,7 +366,7 @@
+ 
+     @log_capture()
+     def test_no_rule_lower_bound(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest51, test=True), yt.ivDict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest51, job_conf_path=job_conf_path, test=True), yt.ivDict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Missing bounds for rule 1 in 'spades'. Ignoring rule."),
+@@ -365,7 +375,7 @@
+ 
+     @log_capture()
+     def test_no_rule_upper_bound(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest52, test=True), yt.ivDict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest52, job_conf_path=job_conf_path, test=True), yt.ivDict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Missing bounds for rule 1 in 'spades'. Ignoring rule."),
+@@ -374,7 +384,7 @@
+ 
+     @log_capture()
+     def test_no_rule_arg(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest53, test=True), yt.ivDict53)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest53, job_conf_path=job_conf_path, test=True), yt.ivDict53)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Found a fail_message for rule 1 in 'spades', but destination is not 'fail'! Setting destination to 'fail'."),
+@@ -383,7 +393,7 @@
+ 
+     @log_capture()
+     def test_bad_rule_type(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest6, test=True), yt.ivDict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest6, job_conf_path=job_conf_path, test=True), yt.ivDict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Unrecognized rule_type 'iencs' found in 'spades'. Ignoring..."),
+@@ -392,7 +402,7 @@
+ 
+     @log_capture()
+     def test_no_err_msg(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest91, test=True), yt.iv91dict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest91, job_conf_path=job_conf_path, test=True), yt.iv91dict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No nice_value found for rule 1 in 'spades'. Setting nice_value to 0."),
+@@ -402,7 +412,7 @@
+ 
+     @log_capture()
+     def test_no_default_dest(self, l):
+-        dt.parse_yaml(path=yt.ivYMLTest7, test=True)
++        dt.parse_yaml(path=yt.ivYMLTest7, job_conf_path=job_conf_path, test=True)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'No global default destination specified in config!'),
+@@ -411,7 +421,7 @@
+ 
+     @log_capture()
+     def test_invalid_category(self, l):
+-        dt.parse_yaml(path=yt.ivYMLTest8, test=True)
++        dt.parse_yaml(path=yt.ivYMLTest8, job_conf_path=job_conf_path, test=True)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'No global default destination specified in config!'),
+@@ -421,27 +431,27 @@
+ 
+     @log_capture()
+     def test_arguments_no_err_msg(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest12, test=True), yt.iv12dict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest12, job_conf_path=job_conf_path, test=True), yt.iv12dict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG',
+-            "Missing a fail_message for rule 1 in 'spades'. Adding generic fail_message."),
++             "Missing a fail_message for rule 1 in 'spades'. Adding generic fail_message."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+         )
+ 
+     @log_capture()
+     def test_arguments_no_args(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest131, test=True), yt.iv131dict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest131, job_conf_path=job_conf_path, test=True), yt.iv131dict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG',
+-            "No arguments found for rule 1 in 'spades' despite being of type arguments. Ignoring rule."),
++             "No arguments found for rule 1 in 'spades' despite being of type arguments. Ignoring rule."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+         )
+ 
+     @log_capture()
+     def test_arguments_no_arg(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest132, test=True), yt.iv132dict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest132, job_conf_path=job_conf_path, test=True), yt.iv132dict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Found a fail_message for rule 1 in 'spades', but destination is not 'fail'! Setting destination to 'fail'."),
+@@ -450,14 +460,14 @@
+ 
+     @log_capture()
+     def test_return_bool_for_multiple_jobs(self, l):
+-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest133, test=True, return_bool=True))
++        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest133, job_conf_path=job_conf_path, test=True, return_bool=True))
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Missing a fail_message for rule 1 in 'smalt'.")
+         )
+ 
+     @log_capture()
+     def test_return_rule_for_multiple_jobs(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest133, test=True), yt.iv133dict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest133, job_conf_path=job_conf_path, test=True), yt.iv133dict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Missing a fail_message for rule 1 in 'smalt'. Adding generic fail_message."),
+@@ -466,14 +476,14 @@
+ 
+     @log_capture()
+     def test_return_bool_for_no_destination(self, l):
+-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest134, test=True, return_bool=True))
++        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest134, job_conf_path=job_conf_path, test=True, return_bool=True))
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No destination specified for rule 1 in 'spades'.")
+         )
+ 
+     @log_capture()
+     def test_return_rule_for_no_destination(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest134, test=True), yt.iv134dict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest134, job_conf_path=job_conf_path, test=True), yt.iv134dict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No destination specified for rule 1 in 'spades'. Ignoring..."),
+@@ -482,7 +492,7 @@
+ 
+     @log_capture()
+     def test_return_rule_for_reversed_bounds(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest135, test=True), yt.iv135dict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest135, job_conf_path=job_conf_path, test=True), yt.iv135dict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "lower_bound exceeds upper_bound for rule 1 in 'spades'. Reversing bounds."),
+@@ -491,14 +501,14 @@
+ 
+     @log_capture()
+     def test_return_bool_for_missing_tool_fields(self, l):
+-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest136, test=True, return_bool=True))
++        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest136, job_conf_path=job_conf_path, test=True, return_bool=True))
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'spades' does not have rules nor a default_destination!")
+         )
+ 
+     @log_capture()
+     def test_return_rule_for_missing_tool_fields(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest136, test=True), yt.iv136dict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest136, job_conf_path=job_conf_path, test=True), yt.iv136dict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'spades' does not have rules nor a default_destination!"),
+@@ -507,14 +517,14 @@
+ 
+     @log_capture()
+     def test_return_bool_for_blank_tool(self, l):
+-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest137, test=True, return_bool=True))
++        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest137, job_conf_path=job_conf_path, test=True, return_bool=True))
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Config section for tool 'spades' is blank!")
+         )
+ 
+     @log_capture()
+     def test_return_rule_for_blank_tool(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest137, test=True), yt.iv137dict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest137, job_conf_path=job_conf_path, test=True), yt.iv137dict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Config section for tool 'spades' is blank!"),
+@@ -523,7 +533,7 @@
+ 
+     @log_capture()
+     def test_return_bool_for_malformed_users(self, l):
+-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest138, test=True, return_bool=True))
++        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest138, job_conf_path=job_conf_path, test=True, return_bool=True))
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Entry '123' in users for rule 1 in tool 'spades' is in an invalid format!"),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Supplied email 'invaliduser.email@com' for rule 1 in tool 'spades' is in an invalid format!")
+@@ -531,7 +541,7 @@
+ 
+     @log_capture()
+     def test_return_rule_for_malformed_users(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest138, test=True), yt.iv138dict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest138, job_conf_path=job_conf_path, test=True), yt.iv138dict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Entry '123' in users for rule 1 in tool 'spades' is in an invalid format! Ignoring entry."),
+@@ -541,14 +551,14 @@
+ 
+     @log_capture()
+     def test_return_bool_for_no_users(self, l):
+-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest139, test=True, return_bool=True))
++        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest139, job_conf_path=job_conf_path, test=True, return_bool=True))
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Couldn't find a list under 'users:'!")
+         )
+ 
+     @log_capture()
+     def test_return_rule_for_no_users(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest139, test=True), yt.iv139dict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest139, job_conf_path=job_conf_path, test=True), yt.iv139dict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Couldn't find a list under 'users:'! Ignoring rule."),
+@@ -557,7 +567,7 @@
+ 
+     @log_capture()
+     def test_return_bool_for_malformed_user_email(self, l):
+-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest140, test=True, return_bool=True))
++        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest140, job_conf_path=job_conf_path, test=True, return_bool=True))
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Supplied email 'invalid.user2@com' for rule 2 in tool 'spades' is in an invalid format!"),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Supplied email 'invalid.user1@com' for rule 2 in tool 'spades' is in an invalid format!"),
+@@ -566,7 +576,7 @@
+ 
+     @log_capture()
+     def test_return_rule_for_malformed_user_email(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest140, test=True), yt.iv140dict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest140, job_conf_path=job_conf_path, test=True), yt.iv140dict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Supplied email 'invalid.user2@com' for rule 2 in tool 'spades' is in an invalid format! Ignoring email."),
+@@ -577,7 +587,7 @@
+ 
+     @log_capture()
+     def test_return_bool_for_empty_users(self, l):
+-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest141, test=True, return_bool=True))
++        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest141, job_conf_path=job_conf_path, test=True, return_bool=True))
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Entry 'None' in users for rule 2 in tool 'spades' is in an invalid format!"),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Entry 'None' in users for rule 2 in tool 'spades' is in an invalid format!"),
+@@ -586,7 +596,7 @@
+ 
+     @log_capture()
+     def test_return_rule_for_empty_users(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest141, test=True), yt.iv141dict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest141, job_conf_path=job_conf_path, test=True), yt.iv141dict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Entry 'None' in users for rule 2 in tool 'spades' is in an invalid format! Ignoring entry."),
+@@ -597,7 +607,7 @@
+ 
+     @log_capture()
+     def test_return_bool_for_bad_num_input_datasets_bounds(self, l):
+-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest142, test=True, return_bool=True))
++        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest142, job_conf_path=job_conf_path, test=True, return_bool=True))
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Error: lower_bound is set to Infinity, but must be lower than upper_bound!"),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "lower_bound exceeds upper_bound for rule 1 in 'smalt'.")
+@@ -605,7 +615,7 @@
+ 
+     @log_capture()
+     def test_return_rule_for_bad_num_input_datasets_bound(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest142, test=True), yt.iv142dict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest142, job_conf_path=job_conf_path, test=True), yt.iv142dict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Error: lower_bound is set to Infinity, but must be lower than upper_bound! Setting lower_bound to 0!"),
+@@ -614,14 +624,14 @@
+ 
+     @log_capture()
+     def test_return_bool_for_worse_num_input_datasets_bounds(self, l):
+-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest143, test=True, return_bool=True))
++        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest143, job_conf_path=job_conf_path, test=True, return_bool=True))
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Error: lower_bound is set to Infinity, but must be lower than upper_bound!")
+         )
+ 
+     @log_capture()
+     def test_return_rule_for_worse_num_input_datasets_bound(self, l):
+-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest143, test=True), yt.iv143dict)
++        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest143, job_conf_path=job_conf_path, test=True), yt.iv143dict)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Error: lower_bound is set to Infinity, but must be lower than upper_bound! Setting lower_bound to 0!"),
+@@ -629,64 +639,243 @@
+         )
+ 
+     @log_capture()
+-    def test_priority_default_destination_without_med_priority_destination(self, l):
+-        dt.parse_yaml(path=yt.ivYMLTest144, test=True)
++    def test_tool_without_low_default_destination(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest146, job_conf_path=job_conf_path, test=True)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default 'med' priority destination!"),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Invalid priority 'low' for rule 1 in 'smalt'. Ignoring..."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+         )
+ 
+     @log_capture()
+-    def test_priority_default_destination_with_invalid_priority_destination(self, l):
+-        dt.parse_yaml(path=yt.ivYMLTest145, test=True)
++    def test_tool_with_invalid_priority_destination(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest147, job_conf_path=job_conf_path, test=True)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Invalid default priority destination 'mine' found in config!"),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Invalid priority 'mine' for rule 1 in 'smalt'. Ignoring..."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+         )
+ 
+     @log_capture()
+-    def test_tool_without_med_priority_destination(self, l):
+-        dt.parse_yaml(path=yt.ivYMLTest146, test=True)
++    def test_not_all_priorities_in_tool(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest149, job_conf_path=job_conf_path, test=True)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No 'med' priority destination for rule 1 in 'smalt'. Ignoring..."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+         )
+ 
+     @log_capture()
+-    def test_tool_with_invalid_priority_destination(self, l):
+-        dt.parse_yaml(path=yt.ivYMLTest147, test=True)
++    def test_rule_destination_not_in_job_conf(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest150, job_conf_path=job_conf_path, test=True)
++        l.check(
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Destination for 'blegh', rule 1: 'fake_destination' does not exist in job configuration. Ignoring..."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
++        )
++
++    @log_capture()
++    def test_tool_default_destination_not_in_job_conf_with_no_rules(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest151, job_conf_path=job_conf_path, test=True)
++        l.check(
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'not_true_destination' does not appear in the job configuration."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'blah' does not have rules nor a default_destination!"),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
++        )
++
++    @log_capture()
++    def test_default_destination_not_in_job_conf(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest152, job_conf_path=job_conf_path, test=True)
++        l.check(
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination 'no_such_dest' does not appear in the job configuration."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
++        )
++
++    @log_capture()
++    def test_rule_destination_without_priority_not_in_job_conf(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest153, job_conf_path=job_conf_path, test=True)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Invalid priority destination 'mine' for rule 1 in 'smalt'. Ignoring..."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Destination for 'blegh', rule 1: 'fake_destination' does not exist in job configuration. Ignoring..."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+         )
+ 
+     @log_capture()
+-    def test_users_with_invalid_priority(self, l):
+-        dt.parse_yaml(path=yt.ivYMLTest148, test=True)
++    def test_tool_default_destination_without_priority_not_in_job_conf_with_no_rules(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest154, job_conf_path=job_conf_path, test=True)
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "User 'user@email.com', priority is not valid! Must be either low, med, or high."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'not_true_destination' does not appear in the job configuration."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'blah' does not have rules nor a default_destination!"),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
++        )
++
++    @log_capture()
++    def test_default_destination_without_priority_not_in_job_conf(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest155, job_conf_path=job_conf_path, test=True)
++        l.check(
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination 'no_such_dest' does not appear in the job configuration."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
++        )
++
++    @log_capture()
++    def test_tool_rule_priority_does_not_exist(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest156, job_conf_path=job_conf_path, test=True)
++        l.check(
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Invalid priority 'notAPriority' for rule 1 in 'aTool'. Ignoring..."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
++        )
++
++    @log_capture()
++    def test_tool_default_destination_priority_does_not_exist(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest157, job_conf_path=job_conf_path, test=True)
++        l.check(
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Invalid default destination priority 'notAPriority' for 'aTool'."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
++        )
++
++    @log_capture()
++    def test_tool_default_destination_not_in_job_conf(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest158, job_conf_path=job_conf_path, test=True)
++        l.check(
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'not_true_destination' does not appear in the job configuration."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
++        )
++
++    @log_capture()
++    def test_tool_default_destination_without_priority_not_in_job_conf(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest159, job_conf_path=job_conf_path, test=True)
++        l.check(
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'not_true_destination' does not appear in the job configuration."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
++        )
++
++    @log_capture()
++    def test_empty_priority_dict(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest163, job_conf_path=job_conf_path, test=True)
++        l.check(
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No global default destinations specified in config!"),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
++        )
++
++    @log_capture()
++    def test_default_dest_is_string_but_priorities_used_in_rule(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest161, job_conf_path=job_conf_path, test=True)
++        l.check(
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Invalid priority 'med' for rule 1 in 'blah'. Ignoring..."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
++        )
++
++    @log_capture()
++    def test_default_dest_is_string_but_priorities_used_in_tool_default_dest(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest162, job_conf_path=job_conf_path, test=True)
++        l.check(
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Invalid default destination priority 'med' for 'blah'."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
++        )
++
++    @log_capture()
++    def test_typo_in_str_default_dest(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest164, job_conf_path=job_conf_path, test=True)
++        l.check(
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination 'waffles-kow' does not appear in the job configuration. Did you mean 'waffles_low'?"),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
++        )
++
++    @log_capture()
++    def test_typo_in_dict_default_dest(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest165, job_conf_path=job_conf_path, test=True)
++        l.check(
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination 'waffles_kow' does not appear in the job configuration. Did you mean 'waffles_low'?"),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
++        )
++
++    @log_capture()
++    def test_typo_in_dict_tool_default_dest(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest166, job_conf_path=job_conf_path, test=True)
++        l.check(
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'waffles_defaut' does not appear in the job configuration. Did you mean 'waffles_default'?"),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
++        )
++
++    @log_capture()
++    def test_typo_in_str_tool_default_dest(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest167, job_conf_path=job_conf_path, test=True)
++        l.check(
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'Destination_3_med' does not appear in the job configuration. Did you mean 'Destination3_med'?"),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
++        )
++
++    @log_capture()
++    def test_typo_in_str_tool_rule_dest(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest168, job_conf_path=job_conf_path, test=True)
++        l.check(
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Destination for 'blah', rule 1: 'thig' does not exist in job configuration. Did you mean 'things'? Ignoring..."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
++        )
++
++    @log_capture()
++    def test_typo_in_dict_tool_rule_dest(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest169, job_conf_path=job_conf_path, test=True)
++        l.check(
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Destination for 'blah', rule 1: 'even_lamerr_cluster' does not exist in job configuration. Did you mean 'even_lamer_cluster'? Ignoring..."),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
++        )
++
++    @log_capture()
++    def test_typo_in_case(self, l):
++        dt.parse_yaml(path=yt.ivYMLTest170, job_conf_path=job_conf_path, test=True)
++        l.check(
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination 'destinationf' does not appear in the job configuration. Did you mean 'DestinationF'?"),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+         )
+ 
+ # ================================Valid yaml files==============================
+     @log_capture()
+     def test_parse_valid_yml(self, l):
+-        self.assertEqual(dt.parse_yaml(yt.vYMLTest1, test=True), yt.vdictTest1_yml)
+-        self.assertEqual(dt.parse_yaml(yt.vYMLTest2, test=True), yt.vdictTest2_yml)
+-        self.assertEqual(dt.parse_yaml(yt.vYMLTest3, test=True), yt.vdictTest3_yml)
+-        self.assertTrue(dt.parse_yaml(yt.vYMLTest4, test=True, return_bool=True))
+-        self.assertEqual(dt.parse_yaml(yt.vYMLTest4, test=True), yt.vdictTest4_yml)
+-        self.assertTrue(dt.parse_yaml(yt.vYMLTest5, test=True, return_bool=True))
+-        self.assertEqual(dt.parse_yaml(yt.vYMLTest5, test=True), yt.vdictTest5_yml)
+-        self.assertTrue(dt.parse_yaml(yt.vYMLTest6, test=True, return_bool=True))
+-        self.assertEqual(dt.parse_yaml(yt.vYMLTest6, test=True), yt.vdictTest6_yml)
+-        self.assertTrue(dt.parse_yaml(yt.vYMLTest7, test=True, return_bool=True))
+-        self.assertEqual(dt.parse_yaml(yt.vYMLTest7, test=True), yt.vdictTest7_yml)
++        self.assertEqual(dt.parse_yaml(yt.vYMLTest1, job_conf_path=job_conf_path, test=True), yt.vdictTest1_yml)
++        self.assertEqual(dt.parse_yaml(yt.vYMLTest2, job_conf_path=job_conf_path, test=True), yt.vdictTest2_yml)
++        self.assertEqual(dt.parse_yaml(yt.vYMLTest3, job_conf_path=job_conf_path, test=True), yt.vdictTest3_yml)
++        self.assertTrue(dt.parse_yaml(yt.vYMLTest4, job_conf_path=job_conf_path, test=True, return_bool=True))
++        self.assertEqual(dt.parse_yaml(yt.vYMLTest4, job_conf_path=job_conf_path, test=True), yt.vdictTest4_yml)
++        self.assertTrue(dt.parse_yaml(yt.vYMLTest5, job_conf_path=job_conf_path, test=True, return_bool=True))
++        self.assertEqual(dt.parse_yaml(yt.vYMLTest5, job_conf_path=job_conf_path, test=True), yt.vdictTest5_yml)
++        self.assertTrue(dt.parse_yaml(yt.vYMLTest6, job_conf_path=job_conf_path, test=True, return_bool=True))
++        self.assertEqual(dt.parse_yaml(yt.vYMLTest6, job_conf_path=job_conf_path, test=True), yt.vdictTest6_yml)
++        self.assertTrue(dt.parse_yaml(yt.vYMLTest7, job_conf_path=job_conf_path, test=True, return_bool=True))
++        self.assertEqual(dt.parse_yaml(yt.vYMLTest7, job_conf_path=job_conf_path, test=True), yt.vdictTest7_yml)
++        self.assertTrue(dt.parse_yaml(yt.vYMLTest160, job_conf_path=job_conf_path, test=True, return_bool=True))
++        self.assertEqual(dt.parse_yaml(yt.vYMLTest160, job_conf_path=job_conf_path, test=True), yt.vdictTest160_yml)
++        self.assertTrue(dt.parse_yaml(yt.vYMLTest164, job_conf_path=job_conf_path, test=True, return_bool=True))
++        self.assertEqual(dt.parse_yaml(yt.vYMLTest164, job_conf_path=job_conf_path, test=True), yt.vdictTest164_yml)
++
+         l.check(
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
+@@ -700,8 +889,14 @@
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
+             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
++            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+         )
+ 
+ # ================================Testing str_to_bytes==========================
+diff -u -r a/test/unit/jobs/dynamic_tool_destination/ymltests.py b/test/unit/jobs/dynamic_tool_destination/ymltests.py
+--- a/test/unit/jobs/dynamic_tool_destination/ymltests.py	2018-02-19 09:00:26.168168712 -0600
++++ b/test/unit/jobs/dynamic_tool_destination/ymltests.py	2018-02-16 09:13:21.213498687 -0600
+@@ -272,12 +272,105 @@
+             'med': 'waffles_default'
+         }
+     },
++    'default_priority': 'med',
+     'users': {
+         'user@example.com': {
+             'priority': 'med'
+         }
+     }
+ }
++
++# No valid priorities but the tool doesn't require one
++vYMLTest160 = '''
++    default_destination: waffles_low
++    default_priority: med
++    tools:
++      blah:
++        rules:
++          - rule_type: num_input_datasets
++            nice_value: 0
++            lower_bound: 0
++            upper_bound: Infinity
++            destination: waffles_default
++        default_destination: waffles_high
++    verbose: True
++'''
++
++vdictTest160_yml = {
++    "tools": {
++        "blah": {
++            "rules": [
++                {
++                    "rule_type": "num_input_datasets",
++                    "nice_value": 0,
++                    "lower_bound": 0,
++                    "upper_bound": "Infinity",
++                    "destination": "waffles_default"
++                }
++            ],
++            "default_destination": "waffles_high"
++        }
++    },
++    'default_destination': 'waffles_low',
++}
++
++# No valid priorities but the tool doesn't require one
++vYMLTest164 = '''
++    default_destination:
++      priority:
++        good: Destination1_med
++        fast: Destination1_high
++    default_priority: good
++    tools:
++      blah:
++        rules:
++          - rule_type: num_input_datasets
++            nice_value: 0
++            lower_bound: 0
++            upper_bound: Infinity
++            destination:
++              priority:
++                fast: lame_cluster
++        default_destination:
++          priority:
++            good: cluster_med_4
++            fast: waffles_high
++    verbose: True
++'''
++
++vdictTest164_yml = {
++    "tools": {
++        "blah": {
++            "rules": [
++                {
++                    "rule_type": "num_input_datasets",
++                    "nice_value": 0,
++                    "lower_bound": 0,
++                    "upper_bound": "Infinity",
++                    "destination": {
++                        "priority": {
++                            "fast": "lame_cluster"
++                        }
++                    }
++                }
++            ],
++            "default_destination": {
++                "priority": {
++                    "good": "cluster_med_4",
++                    "fast": "waffles_high"
++                }
++            }
++        }
++    },
++    'default_destination': {
++        "priority": {
++            "good": "Destination1_med",
++            "fast": "Destination1_high"
++        }
++    },
++    'default_priority': 'good'
++}
++
+ # =====================================================Invalid XML tests==========================================================
+ 
+ # Empty file
+@@ -945,3 +1038,302 @@
+         priority: mine
+     verbose: True
+ '''
++
++# not all priorities in tool destinations
++ivYMLTest149 = '''
++    default_destination:
++      priority:
++        med: waffles_low
++        lowish: waffles_low
++        high: waffles_default
++        higher: waffles_high
++    tools:
++      yuck:
++        default_destination:
++          priority:
++            med: waffles_default
++            high: waffles_high
++    verbose: True
++'''
++
++# rule destination not in job config
++ivYMLTest150 = '''
++    default_destination:
++      priority:
++        med: waffles_low
++    tools:
++      blegh:
++        rules:
++          - rule_type: num_input_datasets
++            nice_value: 0
++            lower_bound: 0
++            upper_bound: Infinity
++            destination:
++              priority:
++                med: fake_destination
++    verbose: True
++'''
++
++# tool default destination not in job config and no rules
++ivYMLTest151 = '''
++    default_destination:
++      priority:
++        med: waffles_low
++    tools:
++      blah:
++        default_destination:
++          priority:
++            med: not_true_destination
++    verbose: True
++'''
++
++# default destination not in job config
++ivYMLTest152 = '''
++    default_destination:
++      priority:
++        med: no_such_dest
++    verbose: True
++'''
++
++# rule destination not in job config (without priority dict)
++ivYMLTest153 = '''
++    default_destination:
++      priority:
++        med: waffles_low
++    tools:
++      blegh:
++        rules:
++          - rule_type: num_input_datasets
++            nice_value: 0
++            lower_bound: 0
++            upper_bound: Infinity
++            destination: fake_destination
++    verbose: True
++'''
++
++# tool default destination not in job config (without priority dict) and no rules
++ivYMLTest154 = '''
++    default_destination:
++      priority:
++        med: waffles_low
++    tools:
++      blah:
++        default_destination: not_true_destination
++    verbose: True
++'''
++
++# default destination not in job config (without priority dict)
++ivYMLTest155 = '''
++    default_destination: no_such_dest
++    verbose: True
++'''
++
++# tool rule destination priority doesn't exist
++ivYMLTest156 = '''
++    default_destination:
++      priority:
++        med: waffles_default
++    tools:
++      aTool:
++        default_destination:
++          priority:
++            med: waffles_low
++        rules:
++          - rule_type: num_input_datasets
++            nice_value: 0
++            lower_bound: 0
++            upper_bound: Infinity
++            destination:
++              priority:
++                notAPriority: waffles_default
++    verbose: True
++'''
++
++# tool default destination priority doesn't exist
++ivYMLTest157 = '''
++    default_destination:
++      priority:
++        med: waffles_default
++    tools:
++      aTool:
++        default_destination:
++          priority:
++            notAPriority: waffles_low
++            med: waffles_low
++    verbose: True
++'''
++
++# tool default destination not in job config
++ivYMLTest158 = '''
++    default_destination:
++      priority:
++        med: waffles_low
++    tools:
++      blah:
++        rules:
++          - rule_type: num_input_datasets
++            nice_value: 0
++            lower_bound: 0
++            upper_bound: Infinity
++            destination:
++              priority:
++                med: waffles_default
++        default_destination:
++          priority:
++            med: not_true_destination
++    verbose: True
++'''
++
++# tool default destination not in job config (without priority dict)
++ivYMLTest159 = '''
++    default_destination: waffles_low
++    tools:
++      blah:
++        rules:
++          - rule_type: num_input_datasets
++            nice_value: 0
++            lower_bound: 0
++            upper_bound: Infinity
++            destination: waffles_default
++        default_destination: not_true_destination
++    verbose: True
++'''
++
++# No valid priorities and the tool rule requires them
++ivYMLTest161 = '''
++    default_destination: waffles_low
++    tools:
++      blah:
++        rules:
++          - rule_type: num_input_datasets
++            nice_value: 0
++            lower_bound: 0
++            upper_bound: Infinity
++            destination:
++              priority:
++                med: waffles_default
++        default_destination: waffles_high
++    verbose: True
++'''
++
++# No valid priorities and the tool default_destination requires them
++ivYMLTest162 = '''
++    default_destination: waffles_low
++    tools:
++      blah:
++        rules:
++          - rule_type: num_input_datasets
++            nice_value: 0
++            lower_bound: 0
++            upper_bound: Infinity
++            destination: waffles_default
++        default_destination:
++          priority:
++            med: waffles_default
++    verbose: True
++'''
++# Nothing in the priority dict
++ivYMLTest163 = '''
++    default_destination:
++      priority:
++    verbose: True
++'''
++
++# Typo in str default destination
++ivYMLTest164 = '''
++    default_destination: waffles-kow
++    verbose: True
++'''
++
++# Typo in dict default destination
++ivYMLTest165 = '''
++    default_destination:
++      priority:
++        pr: waffles_kow
++    default_priority: pr
++    verbose: True
++'''
++
++# Typo in dict tool default destination
++ivYMLTest166 = '''
++    default_destination:
++      priority:
++        med: waffles_low
++    default_priority: med
++    tools:
++      blah:
++        default_destination:
++          priority:
++            med: waffles_defaut
++        rules:
++          - rule_type: num_input_datasets
++            nice_value: 0
++            lower_bound: 0
++            upper_bound: Infinity
++            destination: DestinationF
++    verbose: True
++'''
++
++# Typo in str tool default destination
++ivYMLTest167 = '''
++    default_destination: waffles_low
++    default_priority: waffles_low
++    tools:
++      blah:
++        default_destination: Destination_3_med
++        rules:
++          - rule_type: num_input_datasets
++            nice_value: 0
++            lower_bound: 0
++            upper_bound: Infinity
++            destination: DestinationF
++    verbose: True
++'''
++
++# Typo in dict tool rule destination
++ivYMLTest168 = '''
++    default_destination:
++      priority:
++        med: waffles_default
++    default_priority: med
++    tools:
++      blah:
++        rules:
++          - rule_type: num_input_datasets
++            nice_value: 0
++            lower_bound: 0
++            upper_bound: Infinity
++            destination:
++              priority:
++                med: thig
++    verbose: True
++'''
++
++# Typo in str tool rule destination
++ivYMLTest169 = '''
++    default_destination:
++      priority:
++        med: waffles_default
++    default_priority: med
++    tools:
++      blah:
++        rules:
++          - rule_type: num_input_datasets
++            nice_value: 0
++            lower_bound: 0
++            upper_bound: Infinity
++            destination: even_lamerr_cluster
++        default_destination:
++          priority:
++            med: waffles_default
++    verbose: True
++'''
++
++# Typo in str tool rule destination
++ivYMLTest170 = '''
++    default_destination:
++      priority:
++        med: destinationf
++    default_priority: med
++    verbose: True
++'''

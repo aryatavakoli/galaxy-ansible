@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+# Check if we have exactly one argument
+if [[ $# -eq 2 ]]; then
+
+    # Run command to alter old new states and save the output
+    result=$(psql $1 -c \
+    "UPDATE job \
+    SET state = 'new_manually_dropped' \
+    WHERE state = 'new' \
+    AND update_time < now() at time zone 'utc' - interval '$2 hours';")
+
+    #Output the number of states changed
+    echo "$(grep -Eo '[0-9]+' <<< $result || echo 'no') states altered"
+else
+
+    #Wrong number of arguments received, print help
+    echo "Usage: $0 [CONNECTION_URL] [AGE]"
+    echo "[CONNECTION_URL]: the connection URL for the database to modify"
+    echo "[AGE]: how old in hours a 'new' job needs to be before we change it's status to 'new_manually_dropped'"
+fi

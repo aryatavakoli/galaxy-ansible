@@ -1,0 +1,27 @@
+- name: copy irida_import.sh
+  template:
+    src: irida_import.sh
+    dest: "{{ galaxy_common_dir }}/irida_import.sh"
+    owner: "{{ galaxy_user }}"
+    group: "{{ galaxy_user_group }}"    
+
+- name: copy config.ini
+  become: yes
+  become_user: root
+  template:
+    src: config.ini.j2
+    dest: "/etc/gcc2017-ansible/config.ini"
+    owner: "{{ galaxy_user }}"
+    group: "{{ galaxy_user_group }}"
+    mode: "600"
+
+- shell: "ls {{ galaxy_common_dir }}/shed_tools/galaxy-toolshed.cscscience.ca/repos/irida/irida_import/"
+  register: irida_import_revision
+
+- name: execute irida_import.sh
+  become: yes
+  become_user: "{{ galaxy_user }}"
+  script: /bin/bash "{{ galaxy_common_dir }}/irida_import.sh" /etc/gcc2017-ansible/config.ini
+  args:
+    chdir: "{{ galaxy_common_dir }}"
+    creates: "{{ galaxy_common_dir }}/shed_tools/galaxy-toolshed.cscscience.ca/repos/irida/irida_import/{{ irida_import_revision.stdout }}/irida_import/config.ini"

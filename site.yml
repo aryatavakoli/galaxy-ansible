@@ -1,3 +1,4 @@
+ # master playbook
 - name: Create Galaxy user and directories and install dependencies
   hosts: galaxyservers
   remote_user: "{{ remote_user }}"
@@ -199,7 +200,7 @@
   remote_user: "{{ remote_user }}"
   become: yes
   roles:
-    - proftpd
+    - galaxyproject.proftpd
 
 - hosts: galaxyservers
   remote_user: "{{ remote_user }}"

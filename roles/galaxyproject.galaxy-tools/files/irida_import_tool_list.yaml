@@ -1,0 +1,5 @@
+tools:
+- name: "irida_import"
+  owner: "irida"
+  tool_shed_url: "http://galaxy-toolshed.cscscience.ca"
+  tool_panel_section_id: 'getext'
