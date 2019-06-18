@@ -1,0 +1,290 @@
+ # master playbook
+- name: Create Galaxy user and directories and install dependencies
+  hosts: galaxyservers
+  remote_user: "{{ remote_user }}"
+  become: yes
+  pre_tasks:
+    - name: Set timezone to CST
+      become: yes
+      become_user: root
+      timezone:
+        name: America/Winnipeg
+    - name: Create Galaxy user
+      user:
+        name: "{{ galaxy_user }}"
+        home: "/home/{{ galaxy_user }}"
+        shell: "/bin/bash"
+        system: yes
+      when: galaxy_create_user == true
+    - name: Add `tail -f [logs]` alias
+      become: yes
+      become_user: root
+      lineinfile:
+        path: "/etc/bashrc"
+        create: yes
+        state: present
+        regexp: "alias logs='tail -f .+'"
+        line: "alias logs='tail -f {{ galaxy_root_dir }}/log/*.log'"
+    - name: Add `tocommon` alias
+      become: yes
+      become_user: root
+      lineinfile:
+        path: "/etc/bashrc"
+        create: yes
+        state: present
+        line: "alias tocommon='cd {{ galaxy_common_dir }}'"
+    - name: Add `toprod` alias
+      become: yes
+      become_user: root
+      lineinfile:
+        path: "/etc/bashrc"
+        create: yes
+        state: present
+        line: "alias toprod='cd {{ galaxy_root_dir }}'"
+    - name: Add jobdir script
+      become: yes
+      become_user: root
+      template:
+        dest: "/usr/bin/jobdir"
+        mode: 0755
+        src: jobdir.py.j2
+    - name: Add `tojob` alias
+      become: yes
+      become_user: root
+      lineinfile:
+        path: "/etc/bashrc"
+        create: yes
+        state: present
+        line: "alias tojob='function _tojob(){ cd \"$(/usr/bin/jobdir $1)\" 2> /dev/null && echo \"Moved to directory $(/usr/bin/jobdir $1)\";};_tojob'"
+        regexp: "alias tojob=*"
+    - name: Ensure global `bashrc` gets sourced
+      become: yes
+      become_user: root
+      blockinfile:
+        path: "/etc/profile"
+        create: yes
+        state: present
+        block: |
+          if [ -f /etc/bashrc ]; then
+              . /etc/bashrc
+          fi
+    - name: Check for existence of previous Galaxy instance
+      become: yes
+      become_user: "{{ galaxy_user }}"
+      stat:
+        path: "{{ galaxy_root_dir }}"
+      register: exists_previous
+
+  tasks:
+ #### just make sure we have everything we need ###
+    - name: ensure Galaxy-common directory exists
+      become: yes
+      become_user: "{{ galaxy_user }}"
+      file:
+        name: "{{ galaxy_common_dir }}"
+        state: directory
+        owner: "{{ galaxy_user }}"
+        group: "{{ galaxy_user_group }}"
+
+    - name: ensure Galaxy-common/data directory exits
+      become: yes
+      become_user: "{{ galaxy_user }}"
+      file:
+        name: "{{ galaxy_common_dir }}/data"
+        state: directory
+        owner: "{{ galaxy_user }}"
+        group: "{{ galaxy_user_group }}"
+
+    - name: ensure Galaxy-common/var directory exits
+      become: yes
+      become_user: "{{ galaxy_user }}"
+      file:
+        name: "{{ galaxy_common_dir }}/var"
+        state: directory
+        owner: "{{ galaxy_user }}"
+        group: "{{ galaxy_user_group }}"
+
+    - name: ensure tmp directory exits
+      become: yes
+      become_user: "{{ galaxy_user }}"
+      file:
+        name: "{{ galaxy_tmp_dir }}"
+        state: directory
+
+    - name: Create Galaxy server directory
+      become: yes
+      become_user: "{{ galaxy_user }}"
+      file:
+        name: "{{ item }}"
+        state: directory
+        owner: "{{ galaxy_user }}"
+        group: "{{ galaxy_user_group }}"
+      with_items:
+        - "{{ galaxy_real_dir }}"
+        - "{{ galaxy_real_dir }}/log"
+
+    - name: make new galaxy directory point to galaxy-prod directory
+      become: yes
+      become_user: "{{ galaxy_user }}"
+      file:
+        path: "{{ galaxy_root_dir }}"
+        src: "{{ galaxy_real_dir }}"
+        state: link
+
+    - name: Install packages
+      yum:
+        pkg: ['gcc', 'python-psycopg2', 'git', 'python-virtualenv', 'libselinux-python', 'bzip2.x86_64', 'zlib-devel', 'gcc-c++', 'ncurses-devel', 'firewalld', 'uwsgi', 'uwsgi-plugin-python2', 'perl-Time-Piece', 'perl-XML-Simple', 'perl-App-cpanminus']
+        update_cache: yes
+        state: present
+
+    - name: enable firewalld
+      service:
+        name: firewalld
+        enabled: yes
+        state: started
+
+  roles:
+   - { role: galaxyproject.postgresql, when: create_db == true }
+
+  post_tasks:
+    - name: Add www-data to Galaxy group
+      user:
+        name: www-data
+        groups: "{{ galaxy_user_group }}"
+
+- name: Install and configure supervisor
+  hosts: galaxyservers
+  remote_user: "{{ remote_user }}"
+  become: yes
+  roles:
+    - supervisor
+
+- name: Configure PostgreSQL access
+  vars:
+    postgresql_objects_users:
+      - name: "{{ galaxy_user }}"
+    postgresql_objects_databases:
+      - name: "{{ galaxy_user }}"
+        owner: "{{ galaxy_user }}"
+  hosts: galaxyservers
+  remote_user: "{{ remote_user }}"
+  roles:
+   - { role: natefoo.postgresql_objects, when: create_db == true }
+  
+
+- name: Install and configure Galaxy
+  hosts: galaxyservers
+  remote_user: "{{ remote_user }}"
+  become: yes
+  become_user: "{{ galaxy_user }}"
+  roles:
+    - galaxyproject.nginx
+    - galaxyproject.galaxy
+    - vidtd
+  post_tasks:
+    - name: Install uwsgidecorators
+      pip:
+        name: uwsgidecorators
+        virtualenv: "{{ galaxy_venv_dir }}"
+    - name: Create new temp directory for nginx
+      become: yes
+      become_user: root
+      file:
+        path: /var/lib/nginx_tmp
+        state: directory
+        owner: "{{ galaxy_user }}"
+        group: "{{ galaxy_user_group }}"
+
+- name: Install and configure ProFTPD
+  hosts: galaxyservers
+  remote_user: "{{ remote_user }}"
+  become: yes
+  roles:
+    - galaxyproject.proftpd
+
+- hosts: galaxyservers
+  remote_user: "{{ remote_user }}"
+  become: yes
+  tasks:
+      - include: roles/galaxyproject.interactive_environments/tasks/install_dependencies.yml
+
+- name: setup local environment
+  hosts: galaxyservers
+  vars:
+    interactive_environments_config_files:
+      - 'jupyter'
+      - 'rstudio'
+      - 'ethercalc'
+  remote_user: "{{ remote_user }}"
+  gather_facts: False
+  roles:
+   - galaxyproject.interactive_environments
+
+- name: setup toolshed
+  hosts: galaxyservers
+  remote_user: "{{ remote_user }}"
+  become: yes
+  become_user: "{{ galaxy_user }}"
+  gather_facts: False
+  roles:
+   - { role: galaxyproject.galaxy-tools, when: install_tools == true }
+
+- name: install irida_import tool
+  vars:
+    galaxy_tools_tool_list_files: "files/irida_import_tool_list.yaml"
+  hosts: galaxyservers
+  remote_user: "{{ remote_user }}"
+  become: yes
+  become_user: "{{ galaxy_user }}"
+  gather_facts: False
+  roles:
+   - { role: galaxyproject.galaxy-tools, when: import_irida == true }
+
+- name: import irida
+  hosts: galaxyservers
+  remote_user: "{{ remote_user }}"
+  become: yes
+  become_user: "{{ galaxy_user }}"
+  roles:
+   - { role: irida, when: import_irida == true }
+
+- name: Install Galaxy IRIDA scripts for configuring IRIDA instances of Galaxy
+  hosts: galaxyservers
+  remote_user: "{{ remote_user }}"
+  become: yes
+  tasks:
+    - name: Add environment setup
+      become: yes
+      become_user: root
+      template:
+        dest: "/usr/bin/galaxy-irida-environment-setup.sh"
+        mode: 0755
+        src: galaxy-irida-environment-setup.sh.j2
+    - name: Add install bioperl script
+      become: yes
+      become_user: root
+      template:
+        dest: "/usr/bin/galaxy-irida-install-bioperl.sh"
+        mode: 0755
+        src: galaxy-irida-install-bioperl.sh.j2
+    - name: Add mentalist fix script
+      become: yes
+      become_user: root
+      template:
+        dest: "/usr/bin/galaxy-irida-mentalist-fix.sh"
+        mode: 0755
+        src: galaxy-irida-mentalist-fix.sh.j2
+    - name: Add shovill fix script
+      become: yes
+      become_user: root
+      template:
+        dest: "/usr/bin/galaxy-irida-shovill-fix.sh"
+        mode: 0755
+        src: galaxy-irida-shovill-fix.sh.j2
+    - name: Add Galaxy IRIDA patch script
+      become: yes
+      become_user: root
+      template:
+        dest: "/usr/bin/galaxy-irida-patches.sh"
+        mode: 0755
+        src: galaxy-irida-patches.sh.j2
