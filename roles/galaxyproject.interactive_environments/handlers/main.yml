@@ -1,9 +1,0 @@
----
-# handlers file for galaxyprojectdotorg.interactive_enviroments
-
-- name: supervisorctl restart gie_proxy
-  become: yes
-  become_user: "{{ galaxy_user }}"
-  supervisorctl:
-    name: "{{ interactive_environments_supervisor_program_name }}"
-    state: restarted

@@ -1,5 +1,0 @@
-- name: restart galaxy
-  supervisorctl: name="gx:" state=restarted
-  ignore_errors: yes
-  become: yes
-  become_user: "{{ galaxy_user }}"

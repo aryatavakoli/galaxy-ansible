@@ -1,7 +1,0 @@
----
-
-- name: update supervisor
-  command: 'supervisorctl reread'
-  ignore_errors: yes
-  become: yes
-  become_user: "{{ galaxy_user }}"

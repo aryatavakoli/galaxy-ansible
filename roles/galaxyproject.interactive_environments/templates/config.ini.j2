@@ -1,9 +1,0 @@
-;;
-;; This file is maintained by Ansible - CHANGES WILL BE OVERWRITTEN
-;;
-[main]
-
-[docker]
-command = docker -H tcp://{{ galaxy_jupyter_address }}:{{ galaxy_jupyter_port }} {docker_args}
-docker_hostname = {{ galaxy_jupyter_address }}
-galaxy_url = {{ galaxy_infrastructure_url }}
