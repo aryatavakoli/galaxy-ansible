@@ -1,5 +1,0 @@
-- name: Apply DTD configurable priority patch
-  patch:
-    src: dtd_configurable_priorities.patch
-    basedir: "{{ galaxy_server_dir }}"
-    strip: 1

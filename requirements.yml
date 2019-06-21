@@ -1,0 +1,24 @@
+---
+- name: galaxyproject.galaxy
+  src: https://github.com/galaxyproject/ansible-galaxy
+
+- name: galaxyproject.galaxy-tools
+  src: https://github.com/galaxyproject/ansible-galaxy-tools
+
+- name: galaxyproject.interactive_environments
+  src: https://github.com/galaxyproject/ansible-interactive-environments
+
+- name: galaxyproject.nginx
+  src: https://github.com/galaxyproject/ansible-nginx
+
+- name: galaxyproject.postgresql
+  src: https://github.com/galaxyproject/ansible-postgresql
+
+- name: proftpd
+  src: https://github.com/galaxyproject/ansible-proftpd
+
+- name: natefoo.postgresql_objects
+  src: https://github.com/natefoo/ansible-postgresql-objects
+
+- name: supervisor
+  src: https://github.com/geerlingguy/ansible-role-supervisor

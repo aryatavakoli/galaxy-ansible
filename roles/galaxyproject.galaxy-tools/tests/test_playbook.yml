@@ -1,8 +1,0 @@
-- hosts: localhost
-  gather_facts: False
-  connection: local
-  vars:
-      galaxy_tools_tool_list_files: [ "files/tool_list.yaml.sample" ]
-  roles:
-      - ansible-galaxy-tools
-

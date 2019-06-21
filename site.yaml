@@ -200,7 +200,7 @@
   remote_user: "{{ remote_user }}"
   become: yes
   roles:
-    - galaxyproject.proftpd
+    - proftpd
 
 - hosts: galaxyservers
   remote_user: "{{ remote_user }}"
