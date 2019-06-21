@@ -36,7 +36,7 @@ irida_user_username: 'username'
 irida_user_password: 'password'
 irida_user_key: 'key'
 irida_client_id_config: 'id'
-irida_client_secret : 'password'
+irida_client_secret: 'password'
 galaxy_api_key: 'thisisaweakandunencryptedkey!'
 create_db: true
 galaxy_tmp_dir: '/tmp'
