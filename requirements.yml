@@ -17,8 +17,8 @@
 - name: proftpd
   src: https://github.com/galaxyproject/ansible-proftpd
 
-- name: natefoo.postgresql_objects
-  src: https://github.com/natefoo/ansible-postgresql-objects
+#- name: natefoo.postgresql_objects
+  #src: https://github.com/natefoo/ansible-postgresql-objects
 
 - name: supervisor
   src: https://github.com/geerlingguy/ansible-role-supervisor
