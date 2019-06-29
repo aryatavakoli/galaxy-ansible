@@ -5,8 +5,8 @@
 - name: galaxyproject.galaxy-tools
   src: https://github.com/galaxyproject/ansible-galaxy-tools
 
-- name: galaxyproject.interactive_environments
-  src: https://github.com/galaxyproject/ansible-interactive-environments
+# - name: galaxyproject.interactive_environments
+#   src: https://github.com/galaxyproject/ansible-interactive-environments
 
 - name: galaxyproject.nginx
   src: https://github.com/galaxyproject/ansible-nginx

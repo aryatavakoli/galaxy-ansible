@@ -202,23 +202,23 @@
   roles:
     - proftpd
 
-- hosts: galaxyservers
-  remote_user: "{{ remote_user }}"
-  become: yes
-  tasks:
-      - include: roles/galaxyproject.interactive_environments/tasks/install_dependencies.yml
+# - hosts: galaxyservers
+#   remote_user: "{{ remote_user }}"
+#   become: yes
+#   tasks:
+#       - include: roles/galaxyproject.interactive_environments/tasks/install_dependencies.yml
 
-- name: setup local environment
-  hosts: galaxyservers
-  vars:
-    interactive_environments_config_files:
-      - 'jupyter'
-      - 'rstudio'
-      - 'ethercalc'
-  remote_user: "{{ remote_user }}"
-  gather_facts: False
-  roles:
-   - galaxyproject.interactive_environments
+# - name: setup local environment
+#   hosts: galaxyservers
+#   vars:
+#     interactive_environments_config_files:
+#       - 'jupyter'
+#       - 'rstudio'
+#       - 'ethercalc'
+#   remote_user: "{{ remote_user }}"
+#   gather_facts: False
+#   roles:
+#    - galaxyproject.interactive_environments
 
 - name: setup toolshed
   hosts: galaxyservers
