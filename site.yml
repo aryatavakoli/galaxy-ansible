@@ -160,12 +160,6 @@
     - supervisor
 
 - name: Configure PostgreSQL access
-  vars:
-    postgresql_objects_users:
-      - name: "{{ galaxy_user }}"
-    postgresql_objects_databases:
-      - name: "{{ galaxy_user }}"
-        owner: "{{ galaxy_user }}"
   hosts: galaxyservers
   remote_user: "{{ remote_user }}"
   roles:
@@ -202,23 +196,18 @@
   roles:
     - proftpd
 
-# - hosts: galaxyservers
-#   remote_user: "{{ remote_user }}"
-#   become: yes
-#   tasks:
-#       - include: roles/galaxyproject.interactive_environments/tasks/install_dependencies.yml
+- hosts: galaxyservers
+  remote_user: "{{ remote_user }}"
+  become: yes
+  tasks:
+      - include: roles/galaxyproject.interactive_environments/tasks/install_dependencies.yml
 
-# - name: setup local environment
-#   hosts: galaxyservers
-#   vars:
-#     interactive_environments_config_files:
-#       - 'jupyter'
-#       - 'rstudio'
-#       - 'ethercalc'
-#   remote_user: "{{ remote_user }}"
-#   gather_facts: False
-#   roles:
-#    - galaxyproject.interactive_environments
+- name: setup local environment
+  hosts: galaxyservers
+  remote_user: "{{ remote_user }}"
+  gather_facts: False
+  roles:
+   - galaxyproject.interactive_environments
 
 - name: setup toolshed
   hosts: galaxyservers
@@ -229,62 +218,60 @@
   roles:
    - { role: galaxyproject.galaxy-tools, when: install_tools == true }
 
-- name: install irida_import tool
-  vars:
-    galaxy_tools_tool_list_files: "files/irida_import_tool_list.yaml"
-  hosts: galaxyservers
-  remote_user: "{{ remote_user }}"
-  become: yes
-  become_user: "{{ galaxy_user }}"
-  gather_facts: False
-  roles:
-   - { role: galaxyproject.galaxy-tools, when: import_irida == true }
+# - name: install irida_import tool
+#   hosts: galaxyservers
+#   remote_user: "{{ remote_user }}"
+#   become: yes
+#   become_user: "{{ galaxy_user }}"
+#   gather_facts: False
+#   roles:
+#    - { role: galaxyproject.galaxy-tools, when: import_irida == true }
 
-- name: import irida
-  hosts: galaxyservers
-  remote_user: "{{ remote_user }}"
-  become: yes
-  become_user: "{{ galaxy_user }}"
-  roles:
-   - { role: irida, when: import_irida == true }
+# - name: import irida
+#   hosts: galaxyservers
+#   remote_user: "{{ remote_user }}"
+#   become: yes
+#   become_user: "{{ galaxy_user }}"
+#   roles:
+#    - { role: irida, when: import_irida == true }
 
-- name: Install Galaxy IRIDA scripts for configuring IRIDA instances of Galaxy
-  hosts: galaxyservers
-  remote_user: "{{ remote_user }}"
-  become: yes
-  tasks:
-    - name: Add environment setup
-      become: yes
-      become_user: root
-      template:
-        dest: "/usr/bin/galaxy-irida-environment-setup.sh"
-        mode: 0755
-        src: galaxy-irida-environment-setup.sh.j2
-    - name: Add install bioperl script
-      become: yes
-      become_user: root
-      template:
-        dest: "/usr/bin/galaxy-irida-install-bioperl.sh"
-        mode: 0755
-        src: galaxy-irida-install-bioperl.sh.j2
-    - name: Add mentalist fix script
-      become: yes
-      become_user: root
-      template:
-        dest: "/usr/bin/galaxy-irida-mentalist-fix.sh"
-        mode: 0755
-        src: galaxy-irida-mentalist-fix.sh.j2
-    - name: Add shovill fix script
-      become: yes
-      become_user: root
-      template:
-        dest: "/usr/bin/galaxy-irida-shovill-fix.sh"
-        mode: 0755
-        src: galaxy-irida-shovill-fix.sh.j2
-    - name: Add Galaxy IRIDA patch script
-      become: yes
-      become_user: root
-      template:
-        dest: "/usr/bin/galaxy-irida-patches.sh"
-        mode: 0755
-        src: galaxy-irida-patches.sh.j2
+# - name: Install Galaxy IRIDA scripts for configuring IRIDA instances of Galaxy
+#   hosts: galaxyservers
+#   remote_user: "{{ remote_user }}"
+#   become: yes
+#   tasks:
+#     - name: Add environment setup
+#       become: yes
+#       become_user: root
+#       template:
+#         dest: "/usr/bin/galaxy-irida-environment-setup.sh"
+#         mode: 0755
+#         src: galaxy-irida-environment-setup.sh.j2
+#     - name: Add install bioperl script
+#       become: yes
+#       become_user: root
+#       template:
+#         dest: "/usr/bin/galaxy-irida-install-bioperl.sh"
+#         mode: 0755
+#         src: galaxy-irida-install-bioperl.sh.j2
+#     - name: Add mentalist fix script
+#       become: yes
+#       become_user: root
+#       template:
+#         dest: "/usr/bin/galaxy-irida-mentalist-fix.sh"
+#         mode: 0755
+#         src: galaxy-irida-mentalist-fix.sh.j2
+#     - name: Add shovill fix script
+#       become: yes
+#       become_user: root
+#       template:
+#         dest: "/usr/bin/galaxy-irida-shovill-fix.sh"
+#         mode: 0755
+#         src: galaxy-irida-shovill-fix.sh.j2
+#     - name: Add Galaxy IRIDA patch script
+#       become: yes
+#       become_user: root
+#       template:
+#         dest: "/usr/bin/galaxy-irida-patches.sh"
+#         mode: 0755
+#         src: galaxy-irida-patches.sh.j2

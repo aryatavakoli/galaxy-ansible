@@ -1,4 +1,5 @@
 ---
+#Global Galaxy Variables
 galaxy_release_number: '19.05'
 galaxy_version: "release_19.05"
 galaxy_root_dir: "/root/galaxy-prod"
@@ -10,39 +11,63 @@ galaxy_user_group: "root"
 galaxy_create_user: false
 galaxy_server_dir: "/root/galaxy-prod/server"
 report_configs: "root"
-galaxy_database_connection: "postgresql://postgres:postgres@localhost:5432/root"
-galaxy_install_database_connection: "postgresql://postgres:postgres@localhost:5432/root"
-galaxy_venv_dir: "/root/galaxy-prod/venv"
-supervisor_configs: "galaxy-supervisor"
-supervisord_conf_dir: "/etc/supervisord.d"
-proftpd_configs: "galaxy"
 remote_user: "galaxy"
 server_name: "galaxy.ca"
+galaxy_infrastructure_url: "galaxy.ca"
+galaxy_tmp_dir: '/tmp'
+dev_env: true
 galaxy_admin_users: "username,admin@localhost.com"
 galaxy_require_login: false
 galaxy_allow_user_creation: true
 galaxy_allow_user_impersonation: true
+
+#Galaxy
+galaxy_venv_dir: "/root/galaxy-prod/venv"
+
+#postgresql
+galaxy_database_connection: "postgresql://postgres:postgres@localhost:5432/root"
+galaxy_install_database_connection: "postgresql://postgres:postgres@localhost:5432/root"
+create_db: true
+
+#postgresql objects (natefoo)
+postgresql_objects_users: "root"
+postgresql_objects_databases: "root"
+
+#supervisord
+supervisor_configs: "galaxy-supervisor"
+supervisord_conf_dir: "/etc/supervisord.d"
+
+#proftp
+proftpd_configs: "galaxy"
 galaxy_ftp_dir: "/tmp/Galaxies/ftp/unknown"
-install_tools: false
-galaxy_tool_list: "%{lookup('tools::tool_list')}"
+
+#interactive-enviroment
 galaxy_jupyter_address: "galaxy-docker.canada.ca"
 galaxy_jupyter_port: "2375"
-galaxy_infrastructure_url: "galaxy.ca"
-dev_env: true
-galaxy_waffleiron_url: http://websiteiron.com
-import_irida: false
-create_irida_user: false
-irida_user_username: 'username'
-irida_user_password: 'password'
-irida_user_key: 'key'
-irida_client_id_config: 'id'
-irida_client_secret: 'password'
-galaxy_api_key: 'thisisaweakandunencryptedkey!'
-create_db: true
-galaxy_tmp_dir: '/tmp'
-ldap_enable: false
-ldap_server: ''
-ldap_search_user: ''
-ldap_search_password: ''
-ldap_search_base: ""
-ldap_domain: ''
+interactive_environments_config_files:
+    - 'jupyter'
+    - 'rstudio'
+    - 'ethercalc'
+
+
+#galaxy-tools role
+install_tools: false
+galaxy_tool_list: "%{lookup('tools::tool_list')}"
+galaxy_tools_tool_list_files: "files/irida_import_tool_list.yaml"
+
+#Irida
+# import_irida: false
+# create_irida_user: false
+# irida_user_username: 'username'
+# irida_user_password: 'password'
+# irida_user_key: 'key'
+# irida_client_id_config: 'id'
+# irida_client_secret: 'password'
+# galaxy_api_key: 'thisisaweakandunencryptedkey!'
+#LDAP
+# ldap_enable: false
+# ldap_server: ''
+# ldap_search_user: ''
+# ldap_search_password: ''
+# ldap_search_base: ""
+# ldap_domain: ''
