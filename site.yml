@@ -4,11 +4,12 @@
   remote_user: "{{ remote_user }}"
   become: yes
   pre_tasks:
-    - name: Set timezone to CST
+    - name: Set timezone to PST
       become: yes
       become_user: root
       timezone:
-        name: America/Winnipeg
+        name: America/Vancouver
+
     - name: Create Galaxy user
       user:
         name: "{{ galaxy_user }}"
@@ -16,6 +17,7 @@
         shell: "/bin/bash"
         system: yes
       when: galaxy_create_user == true
+
     - name: Add `tail -f [logs]` alias
       become: yes
       become_user: root
@@ -25,6 +27,7 @@
         state: present
         regexp: "alias logs='tail -f .+'"
         line: "alias logs='tail -f {{ galaxy_root_dir }}/log/*.log'"
+
     - name: Add `tocommon` alias
       become: yes
       become_user: root
@@ -33,6 +36,7 @@
         create: yes
         state: present
         line: "alias tocommon='cd {{ galaxy_common_dir }}'"
+
     - name: Add `toprod` alias
       become: yes
       become_user: root
@@ -41,6 +45,7 @@
         create: yes
         state: present
         line: "alias toprod='cd {{ galaxy_root_dir }}'"
+
     - name: Add jobdir script
       become: yes
       become_user: root
@@ -48,6 +53,7 @@
         dest: "/usr/bin/jobdir"
         mode: 0755
         src: jobdir.py.j2
+
     - name: Add `tojob` alias
       become: yes
       become_user: root
@@ -57,6 +63,7 @@
         state: present
         line: "alias tojob='function _tojob(){ cd \"$(/usr/bin/jobdir $1)\" 2> /dev/null && echo \"Moved to directory $(/usr/bin/jobdir $1)\";};_tojob'"
         regexp: "alias tojob=*"
+
     - name: Ensure global `bashrc` gets sourced
       become: yes
       become_user: root
@@ -68,6 +75,7 @@
           if [ -f /etc/bashrc ]; then
               . /etc/bashrc
           fi
+
     - name: Check for existence of previous Galaxy instance
       become: yes
       become_user: "{{ galaxy_user }}"
@@ -184,6 +192,7 @@
       pip:
         name: uwsgidecorators
         virtualenv: "{{ galaxy_venv_dir }}"
+        
     - name: Create new temp directory for nginx
       become: yes
       become_user: root
@@ -192,7 +201,7 @@
         state: directory
         owner: "{{ galaxy_user }}"
         group: "{{ galaxy_user_group }}"
-        
+
     - name: Remove Conda.lock file
       become: yes
       become_user: "{{ galaxy_user }}"
