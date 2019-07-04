@@ -144,7 +144,8 @@
         state: started
 
   roles:
-   - { role: galaxyproject.postgresql, when: create_db == true }
+    - role: galaxyproject.postgresql
+      when: create_db == true
 
   post_tasks:
     - name: Add www-data to Galaxy group
@@ -163,7 +164,10 @@
   hosts: galaxyservers
   remote_user: "{{ remote_user }}"
   roles:
-   - { role: natefoo.postgresql_objects, when: create_db == true }
+    - role: natefoo.postgresql_objects
+      become: yes
+      become_user: postgres
+      when: create_db == true
   
 
 - name: Install and configure Galaxy
@@ -188,6 +192,13 @@
         state: directory
         owner: "{{ galaxy_user }}"
         group: "{{ galaxy_user_group }}"
+        
+    - name: Remove Conda.lock file
+      become: yes
+      become_user: "{{ galaxy_user }}"
+      file:
+        path: "{{galaxy_common_dir}}/deps/conda.lock"
+        state: absent
 
 - name: Install and configure ProFTPD
   hosts: galaxyservers
@@ -202,12 +213,20 @@
   tasks:
       - include: roles/galaxyproject.interactive_environments/tasks/install_dependencies.yml
 
-- name: setup local environment
-  hosts: galaxyservers
-  remote_user: "{{ remote_user }}"
-  gather_facts: False
-  roles:
-   - galaxyproject.interactive_environments
+      - name: Install pre-gyp with NPM
+        become: yes
+        become_user: "{{galaxy_user}}"
+        npm:
+          name: node-pre-gyp
+          global: yes
+  
+
+# - name: setup local environment
+#   hosts: galaxyservers
+#   remote_user: "{{ remote_user }}"
+#   gather_facts: False
+#   roles:
+#    - galaxyproject.interactive_environments
 
 - name: setup toolshed
   hosts: galaxyservers
@@ -216,7 +235,8 @@
   become_user: "{{ galaxy_user }}"
   gather_facts: False
   roles:
-   - { role: galaxyproject.galaxy-tools, when: install_tools == true }
+    - role: galaxyproject.galaxy-tools
+      when: install_tools == true 
 
 # - name: install irida_import tool
 #   hosts: galaxyservers

@@ -1,53 +1,65 @@
 ---
 #Global Galaxy Variables
-galaxy_release_number: '19.05'
-galaxy_version: "release_19.05"
-galaxy_root_dir: "/root/galaxy-prod"
-galaxy_common_dir: "/root/galaxy-common"
-galaxy_config_dir: "/root/galaxy-prod/config"
-galaxy_real_dir: "/root/galaxy-19.05"
-galaxy_user: "root"
-galaxy_user_group: "root"
-galaxy_create_user: false
-galaxy_server_dir: "/root/galaxy-prod/server"
-report_configs: "root"
-remote_user: "galaxy"
-server_name: "galaxy.ca"
-galaxy_infrastructure_url: "galaxy.ca"
-galaxy_tmp_dir: '/tmp'
-dev_env: true
+server_name: galaxy.ca
+galaxy_release_number: 19.05
+galaxy_user: root
+galaxy_user_group: root
+galaxy_root_dir: "/{{galaxy_user}}/galaxy-prod"
+galaxy_common_dir: "/{{galaxy_user}}/galaxy-common"
+galaxy_tmp_dir: "/tmp/{{galaxy_user}}"
+
+galaxy_version: "release_{{galaxy_release_number}}"
+galaxy_config_dir: "{{galaxy_root_dir}}/config"
+galaxy_real_dir: "/{{galaxy_user}}/galaxy-{{galaxy_release_number}}"
+galaxy_server_dir: "{{galaxy_root_dir}}/server"
+report_configs: "{{galaxy_user}}"
+remote_user: "{{galaxy_user}}"
+galaxy_infrastructure_url: "{{server_name}}"
+
 galaxy_admin_users: "username,admin@localhost.com"
+
+#Booleans
+galaxy_create_user: false
+dev_env: true
 galaxy_require_login: false
 galaxy_allow_user_creation: true
 galaxy_allow_user_impersonation: true
-
-#Galaxy
-galaxy_venv_dir: "/root/galaxy-prod/venv"
-
-#postgresql
-galaxy_database_connection: "postgresql://postgres:postgres@localhost:5432/root"
-galaxy_install_database_connection: "postgresql://postgres:postgres@localhost:5432/root"
 create_db: true
 
+
+#Galaxy
+galaxy_venv_dir: "{{galaxy_root_dir}}/venv"
+
+#postgresql
+galaxy_database_connection: "postgresql://postgres:postgres@localhost:5432/{{galaxy_user}}"
+galaxy_install_database_connection: "postgresql://postgres:postgres@localhost:5432/{{galaxy_user}}"
+
+
 #postgresql objects (natefoo)
-postgresql_objects_users: "root"
-postgresql_objects_databases: "root"
+# postgresql_objects_users: 
+#     - name: "{{galaxy_user}}"
+# postgresql_objects_databases:
+#     - name: "{{galaxy_user}"
+#     - owner: "{{galaxy_user}"
+#postgresql_objects_groups: "{{galaxy_user_group}"
 
 #supervisord
-supervisor_configs: "galaxy-supervisor"
-supervisord_conf_dir: "/etc/supervisord.d"
+supervisor_configs: galaxy-supervisor
+supervisord_conf_dir: /etc/supervisord.d
 
 #proftp
-proftpd_configs: "galaxy"
-galaxy_ftp_dir: "/tmp/Galaxies/ftp/unknown"
+proftpd_configs: galaxy
+galaxy_ftp_dir: "{{galaxy_tmp_dir}}/ftp/unknown"
 
 #interactive-enviroment
-galaxy_jupyter_address: "galaxy-docker.canada.ca"
-galaxy_jupyter_port: "2375"
-interactive_environments_config_files:
-    - 'jupyter'
-    - 'rstudio'
-    - 'ethercalc'
+# galaxy_mutable_data_dir: "/root"
+# interactive_environments_install_method: "inplace"
+# galaxy_jupyter_address: "127.0.0.1"
+# galaxy_jupyter_port: "2375"
+# interactive_environments_config_files:
+#    - 'jupyter'
+    # - 'rstudio'
+    # - 'ethercalc'
 
 
 #galaxy-tools role
