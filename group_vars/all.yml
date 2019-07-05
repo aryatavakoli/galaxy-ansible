@@ -1,36 +1,40 @@
 ---
 #Global Galaxy Variables
 server_name: galaxy.ca
+galaxy_infrastructure_url: "{{server_name}}"
 galaxy_release_number: 19.05
+galaxy_version: "release_{{galaxy_release_number}}"
+
 galaxy_user: root
 galaxy_user_group: root
 galaxy_db_name: "{{galaxy_user}}-db"
-galaxy_root_dir: "/{{galaxy_user}}/galaxy-prod"
-galaxy_common_dir: "/{{galaxy_user}}/galaxy-common"
-galaxy_tmp_dir: "/tmp/{{galaxy_user}}"
 
-galaxy_version: "release_{{galaxy_release_number}}"
+galaxy_root_dir: "/root/galaxy-prod"
+galaxy_common_dir: "/root/galaxy-common"
+galaxy_tmp_dir: "/tmp"
+galaxy_real_dir: "/root/galaxy-{{galaxy_release_number}}"
 galaxy_config_dir: "{{galaxy_root_dir}}/config"
-galaxy_real_dir: "/{{galaxy_user}}/galaxy-{{galaxy_release_number}}"
 galaxy_server_dir: "{{galaxy_root_dir}}/server"
-report_configs: "{{galaxy_user}}"
-remote_user: "{{galaxy_user}}"
-galaxy_infrastructure_url: "{{server_name}}"
+galaxy_venv_dir: "{{galaxy_root_dir}}/venv"
 
-galaxy_admin_users: "username,admin@localhost.com"
+supervisord_conf_dir: /etc/supervisord.d
+galaxy_ftp_dir: "{{galaxy_tmp_dir}}/Galaxies/ftp/unknown"
+
+report_configs: root
+remote_user: root
+
+# galaxy_admin_users: "{{irida_user_username}},admin@localhost.com"
 
 #Booleans
-galaxy_create_user: false
+galaxy_create_user: no
 dev_env: true
 galaxy_require_login: false
 galaxy_allow_user_creation: true
 galaxy_allow_user_impersonation: true
 create_db: true
 install_tools: false
+galaxy_manage_errordocs: yes
 
-
-#Galaxy
-galaxy_venv_dir: "{{galaxy_root_dir}}/venv"
 
 #postgresql
 galaxy_database_connection: "postgresql://postgres:postgres@localhost:5432/{{galaxy_db_name}}"
@@ -43,19 +47,18 @@ postgresql_objects_users:
       role_attr_flags: SUPERUSER
 postgresql_objects_databases:
     - name: "{{galaxy_db_name}}"
-      owner: "{{galaxy_user}}"
+      owner: "{{galaxy_db_name}}"
 #postgresql_objects_groups: "{{galaxy_user_group}}"
 
 #supervisord
 supervisor_configs: galaxy-supervisor
-supervisord_conf_dir: /etc/supervisord.d
 
 #proftp
 proftpd_configs: galaxy
-galaxy_ftp_dir: "{{galaxy_tmp_dir}}/ftp/unknown"
+
 
 #interactive-enviroment
-# galaxy_mutable_data_dir: "/tmp/{{galaxy_user}}/ie_data"
+# galaxy_mutable_data_dir: "{{galaxy_tmp_dir}}/ie_data"
 # interactive_environments_install_method: "inplace"
 # galaxy_jupyter_address: "127.0.0.1"
 # galaxy_jupyter_port: "2375"
@@ -79,6 +82,7 @@ galaxy_tools_tool_list_files: "files/irida_import_tool_list.yaml"
 # irida_client_id_config: 'id'
 # irida_client_secret: 'password'
 # galaxy_api_key: 'thisisaweakandunencryptedkey!'
+
 #LDAP
 # ldap_enable: false
 # ldap_server: ''
