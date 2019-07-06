@@ -21,7 +21,7 @@ supervisord_conf_dir: /etc/supervisord.d
 galaxy_ftp_dir: "{{galaxy_tmp_dir}}/Galaxies/ftp/unknown"
 
 report_configs: root
-remote_user: root
+remote_user: galaxy
 
 # galaxy_admin_users: "{{irida_user_username}},admin@localhost.com"
 
@@ -33,7 +33,7 @@ galaxy_allow_user_creation: true
 galaxy_allow_user_impersonation: true
 create_db: true
 install_tools: false
-galaxy_manage_errordocs: yes
+# galaxy_manage_errordocs: yes
 
 
 #postgresql
