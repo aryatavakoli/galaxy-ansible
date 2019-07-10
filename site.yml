@@ -139,11 +139,35 @@
         src: "{{ galaxy_real_dir }}"
         state: link
 
-    - name: Install packages
+    - name: Instal EPEL repo
       yum:
-        pkg: ['gcc', 'python-psycopg2', 'git', 'python-virtualenv', 'libselinux-python', 'bzip2.x86_64', 'zlib-devel', 'gcc-c++', 'ncurses-devel', 'firewalld', 'uwsgi', 'uwsgi-plugin-python2', 'perl-Time-Piece', 'perl-XML-Simple', 'perl-App-cpanminus']
+        pkg: "epel-release"
         update_cache: yes
         state: present
+
+    - name: Install packages
+      yum:
+        name: "{{ packages }}"
+        update_cache: yes
+        state: present
+      vars:
+        packages:
+        - gcc 
+        - python-psycopg2 
+        - git 
+        - python-virtualenv 
+        - libselinux-python
+        - python-devel
+        - bzip2.x86_64 
+        - zlib-devel
+        - gcc-c++ 
+        - ncurses-devel 
+        - firewalld 
+        - uwsgi 
+        - uwsgi-plugin-python2
+        - perl-Time-Piece 
+        - perl-XML-Simple 
+        - perl-App-cpanminus
 
     - name: enable firewalld
       service:

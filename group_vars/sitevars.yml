@@ -1,0 +1,93 @@
+---
+#Global Galaxy Variables
+server_name: galaxy.ca
+galaxy_infrastructure_url: "{{server_name}}"
+galaxy_release_number: 19.05
+galaxy_version: "release_{{galaxy_release_number}}"
+
+galaxy_user: root
+galaxy_user_group: root
+galaxy_db_name: "{{galaxy_user}}-db"
+
+galaxy_root_dir: "/root/galaxy-prod"
+galaxy_common_dir: "/root/galaxy-common"
+galaxy_tmp_dir: "/tmp"
+galaxy_real_dir: "/root/galaxy-{{galaxy_release_number}}"
+galaxy_config_dir: "{{galaxy_root_dir}}/config"
+galaxy_server_dir: "{{galaxy_root_dir}}/server"
+galaxy_venv_dir: "{{galaxy_root_dir}}/venv"
+
+
+#supervisord_conf_dir: /etc/supervisor
+galaxy_ftp_dir: "{{galaxy_tmp_dir}}/Galaxies/ftp/unknown"
+
+report_configs: root
+remote_user: galaxy
+
+# galaxy_admin_users: "{{irida_user_username}},admin@localhost.com"
+
+#Booleans
+galaxy_create_user: no
+dev_env: true
+galaxy_require_login: false
+galaxy_allow_user_creation: true
+galaxy_allow_user_impersonation: true
+create_db: true
+install_tools: false
+# galaxy_manage_errordocs: yes
+
+
+#postgresql
+galaxy_database_connection: "postgresql://postgres:postgres@localhost:5432/{{galaxy_db_name}}"
+galaxy_install_database_connection: "postgresql://postgres:postgres@localhost:5432/{{galaxy_db_name}}"
+
+
+# postgresql objects (natefoo)
+postgresql_objects_users: 
+    - name: "{{galaxy_db_name}}"
+      role_attr_flags: SUPERUSER
+postgresql_objects_databases:
+    - name: "{{galaxy_db_name}}"
+      owner: "{{galaxy_db_name}}"
+#postgresql_objects_groups: "{{galaxy_user_group}}"
+
+#supervisord
+supervisor_configs: galaxy-supervisor
+
+#proftp
+proftpd_configs: galaxy
+
+
+#interactive-enviroment
+# galaxy_mutable_data_dir: "{{galaxy_tmp_dir}}/ie_data"
+# interactive_environments_install_method: "inplace"
+# galaxy_jupyter_address: "127.0.0.1"
+# galaxy_jupyter_port: "2375"
+# interactive_environments_config_files:
+#    - 'jupyter'
+    # - 'rstudio'
+    # - 'ethercalc'
+
+
+#galaxy-tools role
+
+galaxy_tool_list: "%{lookup('tools::tool_list')}"
+galaxy_tools_tool_list_files: "files/irida_import_tool_list.yaml"
+
+#Irida
+# import_irida: false
+# create_irida_user: false
+# irida_user_username: 'username'
+# irida_user_password: 'password'
+# irida_user_key: 'key'
+# irida_client_id_config: 'id'
+# irida_client_secret: 'password'
+# galaxy_api_key: 'thisisaweakandunencryptedkey!'
+
+#LDAP
+# ldap_enable: false
+# ldap_server: ''
+# ldap_search_user: ''
+# ldap_search_password: ''
+# ldap_search_base: ""
+# ldap_domain: ''

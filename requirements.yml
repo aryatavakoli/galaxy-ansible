@@ -21,4 +21,10 @@
   src: https://github.com/natefoo/ansible-postgresql-objects
 
 - name: supervisor
-  src: https://github.com/geerlingguy/ansible-role-supervisor
+  src: https://github.com/usegalaxy-eu/ansible-role-supervisor
+
+- name: certbot
+  src: https://github.com/usegalaxy-eu/ansible-certbot
+
+- name: miniconda 
+  src: https://github.com/uchida/ansible-miniconda-role

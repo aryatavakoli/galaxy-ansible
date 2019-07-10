@@ -1,6 +1,2 @@
 [galaxyservers]
-localhost
-
-[galaxyservers:vars]
-ansible_connection=local
-ansible_become=yes
+bccdc-desktop ansible_connection=local
