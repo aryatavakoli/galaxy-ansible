@@ -93,7 +93,7 @@ certbot_domains:
  - "{{ inventory_hostname }}"
 certbot_agree_tos: --agree-tos
 
-# NGINX
+#NGINX
 nginx_selinux_allow_local_connections: true
 nginx_servers:
   - redirect-ssl

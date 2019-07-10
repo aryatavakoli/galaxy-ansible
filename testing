@@ -1,2 +1,0 @@
-[galaxyservers]
-bccdc-desktop ansible_connection=local

@@ -3,21 +3,21 @@
   remote_user: vagrant
   become: yes
   pre_tasks:
+    - name: Set timezone to PST
+      become: yes
+      become_user: root
+      timezone:
+        name: America/Vancouver
+
     - name: Install EPEL repo
       yum:
         pkg: "epel-release"
         update_cache: yes
         state: present
 
-    - name: Install libselinux
-      yum:
-        pkg: "libselinux-python"
-        update_cache: yes
-        state: present
-
     - name: Install packages
       yum:
-        pkg: [python-psycopg2, git, python-virtualenv, python-pip, make]
+        pkg: [libselinux-python,python-psycopg2, git, python-virtualenv, python-pip, make]
         update_cache: yes
         state: present
 
@@ -30,8 +30,9 @@
       become: yes
       become_user: postgres
     - galaxyproject.galaxy
+    - usegalaxy-eu.certbot
     - galaxyproject.nginx
-    - miniconda
+    - uchida.miniconda 
   post_tasks:
     - name: Install uwsgidecorators
       pip:
@@ -47,13 +48,13 @@
   hosts: galaxyservers
   become: yes
   roles:
-    - supervisor
+    - usegalaxy-eu.supervisor
 
 - name: Install and configure ProFTPD
   hosts: galaxyservers
   become: yes
   roles:
-    - proftpd
+    - galaxyproject.proftpd
 
 - name: setup toolshed
   hosts: localhost

@@ -14,17 +14,17 @@
 - name: galaxyproject.postgresql
   src: https://github.com/galaxyproject/ansible-postgresql
 
-- name: proftpd
+- name: galaxyproject.proftpd
   src: https://github.com/galaxyproject/ansible-proftpd
 
 - name: natefoo.postgresql_objects
   src: https://github.com/natefoo/ansible-postgresql-objects
 
-- name: supervisor
+- name: usegalaxy-eu.supervisor
   src: https://github.com/usegalaxy-eu/ansible-role-supervisor
 
-- name: certbot
+- name: usegalaxy-eu.certbot
   src: https://github.com/usegalaxy-eu/ansible-certbot
 
-- name: miniconda 
+- name: uchida.miniconda 
   src: https://github.com/uchida/ansible-miniconda-role
