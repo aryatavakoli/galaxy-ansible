@@ -158,6 +158,7 @@
         - python-virtualenv 
         - libselinux-python
         - python-devel
+        - python-pip
         - bzip2.x86_64 
         - zlib-devel
         - gcc-c++ 
@@ -190,7 +191,7 @@
   remote_user: "{{ remote_user }}"
   become: yes
   roles:
-    - supervisor
+    - usegalaxy-eu.supervisor
 
 - name: Configure PostgreSQL access
   hosts: galaxyservers
@@ -232,13 +233,19 @@
       file:
         path: "{{galaxy_common_dir}}/deps/conda.lock"
         state: absent
+  
+  handlers:
+    - name: Restart Galaxy
+      supervisorctl:
+        name: galaxy
+        state: restarted
 
 - name: Install and configure ProFTPD
   hosts: galaxyservers
   remote_user: "{{ remote_user }}"
   become: yes
   roles:
-    - proftpd
+    - galaxyproject.proftpd
 
 - hosts: galaxyservers
   remote_user: "{{ remote_user }}"

@@ -30,8 +30,8 @@
       become: yes
       become_user: postgres
     - galaxyproject.galaxy
-    - usegalaxy-eu.certbot
     - galaxyproject.nginx
+    - usegalaxy-eu.certbot
     - uchida.miniconda 
   post_tasks:
     - name: Install uwsgidecorators

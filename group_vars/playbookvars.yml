@@ -84,7 +84,7 @@ certbot_install_method: virtualenv
 certbot_auto_renew: yes
 certbot_auto_renew_user: root
 certbot_environment: production
-certbot_well_known_root: /srv/nginx/_well-known_root
+certbot_well_known_root: /srv/nginx/
 certbot_share_key_users:
   - nginx
 certbot_post_renewal: |

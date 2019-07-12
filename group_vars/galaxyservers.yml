@@ -53,6 +53,8 @@ postgresql_objects_databases:
 
 #supervisord
 supervisor_configs: galaxy-supervisor
+supervisor_socket_user: "{{galaxy_user}}"
+supervisor_socket_chown: "{{galaxy_user}}"
 
 #proftp
 proftpd_configs: galaxy
