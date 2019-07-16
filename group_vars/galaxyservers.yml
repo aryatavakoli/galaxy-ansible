@@ -1,95 +1,112 @@
----
-#Global Galaxy Variables
-server_name: galaxy.ca
-galaxy_infrastructure_url: "{{server_name}}"
+
+# Galaxy
 galaxy_release_number: 19.05
-galaxy_version: "release_{{galaxy_release_number}}"
+galaxy_commit_id: "release_{{galaxy_release_number}}"
 
-galaxy_user: root
-galaxy_user_group: root
-galaxy_db_name: "{{galaxy_user}}-db"
+galaxy_root: /srv/galaxy
 
-galaxy_root_dir: "/root/galaxy-prod"
-galaxy_common_dir: "/root/galaxy-common"
-galaxy_tmp_dir: "/tmp"
-galaxy_real_dir: "/root/galaxy-{{galaxy_release_number}}"
-galaxy_config_dir: "{{galaxy_root_dir}}/config"
-galaxy_server_dir: "{{galaxy_root_dir}}/server"
-galaxy_venv_dir: "{{galaxy_root_dir}}/venv"
+galaxy_create_user: true
+galaxy_separate_privileges: true
+galaxy_manage_paths: true
+galaxy_layout: root-dir
+galaxy_file_path: /data
+galaxy_user: galaxy
+galaxy_config_style: yaml
+galaxy_force_checkout: true
+galaxy_privsep_user: gxpriv
+galaxy_group: galaxy
+miniconda_prefix: "{{ galaxy_tool_dependency_dir }}/_conda"
 
+galaxy_config:
+  galaxy:
+    key: value
+    builds_file_path: "{{ galaxy_config_dir  }}/builds.txt"
+    datatypes_config_file: "{{ galaxy_config_dir  }}/datatypes_conf.xml"
+    brand: "My Galaxy"
+    admin_users: admin@example.org
+    database_connection: "postgresql:///galaxy?host=/var/run/postgresql"
+    file_path: /data
+    check_migrate_tools: false
+  uwsgi:
+    socket: 127.0.0.1:8080
+    buffer-size: 16384
+    processes: 1
+    threads: 4
+    offload-threads: 2
+    static-map:
+      - /static/style={{ galaxy_server_dir }}/static/style/blue
+      - /static={{ galaxy_server_dir }}/static
+    master: true
+    virtualenv: "{{ galaxy_venv_dir }}"
+    pythonpath: "{{ galaxy_server_dir }}/lib"
+    module: galaxy.webapps.galaxy.buildapp:uwsgi_app()
+    thunder-lock: true
+    die-on-term: true
+    hook-master-start:
+      - unix_signal:2 gracefully_kill_them_all
+      - unix_signal:15 gracefully_kill_them_all
+    py-call-osafterfork: true
+    enable-threads: true
+    mule:
+      - lib/galaxy/main.py
+      - lib/galaxy/main.py
+    farm: job-handlers:1,2
 
-#supervisord_conf_dir: /etc/supervisor
-galaxy_ftp_dir: "{{galaxy_tmp_dir}}/Galaxies/ftp/unknown"
-
-report_configs: root
-remote_user: galaxy
-
-# galaxy_admin_users: "{{irida_user_username}},admin@localhost.com"
-
-#Booleans
-galaxy_create_user: no
-dev_env: true
-galaxy_require_login: false
-galaxy_allow_user_creation: true
-galaxy_allow_user_impersonation: true
-create_db: true
-install_tools: false
-# galaxy_manage_errordocs: yes
-
-
-#postgresql
-galaxy_database_connection: "postgresql://postgres:postgres@localhost:5432/{{galaxy_db_name}}"
-galaxy_install_database_connection: "postgresql://postgres:postgres@localhost:5432/{{galaxy_db_name}}"
-
-
-# postgresql objects (natefoo)
-postgresql_objects_users: 
-    - name: "{{galaxy_db_name}}"
-      role_attr_flags: SUPERUSER
+#Postgresql
+postgresql_objects_users:
+- name: "{{galaxy_user}}"
+  password: null
 postgresql_objects_databases:
-    - name: "{{galaxy_db_name}}"
-      owner: "{{galaxy_db_name}}"
-#postgresql_objects_groups: "{{galaxy_user_group}}"
+- name: "{{galaxy_user}}"
+  owner: "{{galaxy_user}}"
 
-#supervisord
-supervisor_configs: galaxy-supervisor
+#supervisor
 supervisor_socket_user: "{{galaxy_user}}"
 supervisor_socket_chown: "{{galaxy_user}}"
+galaxy_restart_handler_name: Restart Galaxy
 
-#proftp
-proftpd_configs: galaxy
+supervisor_programs:
+  - name: galaxy
+    state: present
+    command: uwsgi --yaml {{ galaxy_config_dir }}/galaxy.yml
+    configuration: |
+      autostart=true
+      autorestart=true
+      startretries=1
+      startsecs=10
+      user=galaxy
+      umask=022
+      directory={{ galaxy_server_dir }}
+      environment=HOME={{ galaxy_mutable_data_dir }},VIRTUAL_ENV={{ galaxy_venv_dir }},PATH={{ galaxy_venv_dir }}/bin:%(ENV_PATH)s
 
+# Certbot
+certbot_auto_renew_hour: "{{ 23 |random(seed=inventory_hostname)  }}"
+certbot_auto_renew_minute: "{{ 59 |random(seed=inventory_hostname)  }}"
+certbot_auth_method: --webroot
+certbot_install_method: virtualenv
+certbot_auto_renew: yes
+certbot_auto_renew_user: root
+certbot_environment: production
+certbot_well_known_root: /srv/nginx/_well-known_root
+certbot_share_key_users:
+  - nginx
+certbot_post_renewal: |
+    systemctl restart nginx || true
+certbot_domains:
+ - "{{ inventory_hostname }}"
+certbot_agree_tos: --agree-tos
 
-#interactive-enviroment
-# galaxy_mutable_data_dir: "{{galaxy_tmp_dir}}/ie_data"
-# interactive_environments_install_method: "inplace"
-# galaxy_jupyter_address: "127.0.0.1"
-# galaxy_jupyter_port: "2375"
-# interactive_environments_config_files:
-#    - 'jupyter'
-    # - 'rstudio'
-    # - 'ethercalc'
-
-
-#galaxy-tools role
-
-galaxy_tool_list: "%{lookup('tools::tool_list')}"
-galaxy_tools_tool_list_files: "files/irida_import_tool_list.yaml"
-
-#Irida
-# import_irida: false
-# create_irida_user: false
-# irida_user_username: 'username'
-# irida_user_password: 'password'
-# irida_user_key: 'key'
-# irida_client_id_config: 'id'
-# irida_client_secret: 'password'
-# galaxy_api_key: 'thisisaweakandunencryptedkey!'
-
-#LDAP
-# ldap_enable: false
-# ldap_server: ''
-# ldap_search_user: ''
-# ldap_search_password: ''
-# ldap_search_base: ""
-# ldap_domain: ''
+#NGINX
+nginx_flavor: nginx-extras
+nginx_selinux_allow_local_connections: true
+nginx_servers:
+  - redirect-ssl
+nginx_enable_default_server: false
+nginx_ssl_servers:
+  - galaxy
+nginx_conf_http:
+  client_max_body_size: 1g
+nginx_remove_default_vhost: true
+nginx_ssl_role: usegalaxy-eu.certbot
+nginx_conf_ssl_certificate: /etc/ssl/certs/fullchain.pem
+nginx_conf_ssl_certificate_key: /etc/ssl/user/privkey-nginx.pem

@@ -1,24 +1,39 @@
 ---
 - name: galaxyproject.galaxy
-  src: https://github.com/galaxyproject/ansible-galaxy
+  src: galaxyproject.galaxy-tools
+  version: 0.8.4
 
 - name: galaxyproject.galaxy-tools
-  src: https://github.com/galaxyproject/ansible-galaxy-tools
+  src: galaxyproject.galaxy-tools
 
 - name: galaxyproject.interactive_environments
-  src: https://github.com/galaxyproject/ansible-interactive-environments
+  src: galaxyproject.interactive_environments
 
 - name: galaxyproject.nginx
-  src: https://github.com/galaxyproject/ansible-nginx
+  src: galaxyproject.nginx
+  version: 0.6.0
 
 - name: galaxyproject.postgresql
-  src: https://github.com/galaxyproject/ansible-postgresql
+  src: galaxyproject.postgresql
+  version: 1.0.1
 
 - name: galaxyproject.proftpd
-  src: https://github.com/galaxyproject/ansible-proftpd
+  src: galaxyproject.proftpd
 
 - name: natefoo.postgresql_objects
-  src: https://github.com/natefoo/ansible-postgresql-objects
+  src: natefoo.postgresql_objects
+  version: 1.1
+
+- name: uchida.miniconda 
+  src: uchida.miniconda
+  version: 0.3.0
+
+- name: geerlingguy.repo-epel
+  src: geerlingguy.repo-epel
+
+- name: geerlingguy.pip
+  src: geerlingguy.pip
+  version: 1.0.0
 
 - name: usegalaxy-eu.supervisor
   src: https://github.com/usegalaxy-eu/ansible-role-supervisor
@@ -26,5 +41,3 @@
 - name: usegalaxy-eu.certbot
   src: https://github.com/usegalaxy-eu/ansible-certbot
 
-- name: uchida.miniconda 
-  src: https://github.com/uchida/ansible-miniconda-role
