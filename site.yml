@@ -6,7 +6,6 @@
   pre_tasks:
     - name: Set timezone to PST
       become: yes
-      become_user: root
       timezone:
         name: America/Vancouver
 
@@ -20,7 +19,6 @@
 
     - name: Add `tail -f [logs]` alias
       become: yes
-      become_user: root
       lineinfile:
         path: "/etc/bashrc"
         create: yes
@@ -30,7 +28,6 @@
 
     - name: Add `tocommon` alias
       become: yes
-      become_user: root
       lineinfile:
         path: "/etc/bashrc"
         create: yes
@@ -39,7 +36,6 @@
 
     - name: Add `toprod` alias
       become: yes
-      become_user: root
       lineinfile:
         path: "/etc/bashrc"
         create: yes
@@ -48,7 +44,6 @@
 
     - name: Add jobdir script
       become: yes
-      become_user: root
       template:
         dest: "/usr/bin/jobdir"
         mode: 0755
@@ -56,7 +51,6 @@
 
     - name: Add `tojob` alias
       become: yes
-      become_user: root
       lineinfile:
         path: "/etc/bashrc"
         create: yes
@@ -66,7 +60,6 @@
 
     - name: Ensure global `bashrc` gets sourced
       become: yes
-      become_user: root
       blockinfile:
         path: "/etc/profile"
         create: yes
@@ -82,6 +75,12 @@
       stat:
         path: "{{ galaxy_root_dir }}"
       register: exists_previous
+
+  roles:
+    - geerlingguy.repo-epel
+    - geerlingguy.pip
+    - role: galaxyproject.postgresql
+      when: create_db == true
 
   tasks:
  #### just make sure we have everything we need ###
@@ -152,13 +151,12 @@
         state: present
       vars:
         packages:
-        - gcc 
+        - gcc
+        - git
+        - make
         - python-psycopg2 
-        - git 
         - python-virtualenv 
         - libselinux-python
-        - python-devel
-        - python-pip
         - bzip2.x86_64 
         - zlib-devel
         - gcc-c++ 
@@ -175,10 +173,6 @@
         name: firewalld
         enabled: yes
         state: started
-
-  roles:
-    - role: galaxyproject.postgresql
-      when: create_db == true
 
   post_tasks:
     - name: Add www-data to Galaxy group

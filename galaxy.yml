@@ -1,6 +1,5 @@
-- name: Install dependencies
-  hosts: galaxyservers
-  remote_user: vagrant
+# Refernce: https://galaxyproject.github.io/training-material/topics/admin/tutorials/ansible-galaxy/tutorial.html
+- hosts: galaxyservers
   become: yes
   pre_tasks:
     - name: Set timezone to PST
@@ -8,99 +7,49 @@
       timezone:
         name: America/Vancouver
 
-    - name: Create Galaxy user
-      user:
-        name: "{{galaxy_user}}"
-        home: "{{galaxy_root}}"
-        skeleton: "/etc/skel"
-        shell: "/bin/bash"
-        system: yes
-      register: galaxy_user_out
-
-    - name: Create Galaxy server directory
-      become: yes
-      become_user: "{{galaxy_user}}"
-      file:
-        name: "{{ item }}"
-        state: directory
-        owner: "{{galaxy_user}}"
-        group: "{{galaxy_group}}"
-      with_items:
-        - "{{galaxy_root}}"
-        - "{{galaxy_root}}/log"
-  roles: 
-    - geerlingguy.repo-epel
-  tasks:
     - name: Install packages
-      yum:
-        pkg: [libselinux-python,python-psycopg2, git, python-virtualenv, make]
-        update_cache: yes
-        state: present
+      package:
+        name: ['python-psycopg2', 'git', 'python-virtualenv', 'make']
 
-- name: Install PostgreSQL
-  hosts: galaxyservers
-  become: yes
+  handlers: 
+    - name: Restart Galaxy
+      supervisorctl:
+        name: galaxy
+        state: restarted
   roles:
+    - geerlingguy.repo-epel
+    - geerlingguy.pip
     - galaxyproject.postgresql
-  post_tasks:
-    - name: Add www-data to Galaxy group
-      user:
-        name: www-data
-        groups: "{{galaxy_group}}"
-
-    - name: Set upload_store permissions
-      become: yes
-      file:
-        path: "/tmp/upload_store"
-        state: directory
-        owner: www-data
-        group: "{{galaxy_group}}"
-        mode: 02770
-
-- name: Configure PostgreSQL Access
-  hosts: galaxyservers
-  become: yes
-  become_user: postgres
-  roles: 
-    - natefoo.postgresql_objects
-
-- name: Install and configure Galaxy
-  hosts: galaxyservers
-  become: yes
-  roles:
+    - role: natefoo.postgresql_objects
+      become: true
+      become_user: postgres
     - galaxyproject.galaxy
-    - vidtd
+    - uchida.miniconda
     - usegalaxy-eu.supervisor
-    - usegalaxy-eu.certbot
     - galaxyproject.nginx
-    - galaxyproject.proftpd
-    - uchida.miniconda 
+    #- galaxyproject.proftpd
+    #- vidtd
   post_tasks:
     - name: Install uwsgidecorators
       pip:
         name: uwsgidecorators
         virtualenv: "{{ galaxy_venv_dir }}"
-  handlers:
-    - name: Restart Galaxy
-      supervisorctl:
-        name: galaxy
-        state: restarted
 
-- name: Setup Toolshed
-  hosts: galaxyservers
-  gather_facts: False
-  connection: local
-  roles:
-   - galaxyproject.galaxy-tools
+# - name: Setup Toolshed
+#   hosts: galaxyservers
+#   gather_facts: False
+#   connection: local
+#   roles:
+#    - galaxyproject.galaxy-tools
 
-- name: Install Dependecies for Interactive Environments 
-  hosts: galaxyservers
-  tasks:
-    - include: roles/galaxyproject.interactive_environments/tasks/install_dependencies.yml
+# - name: Install Dependecies for Interactive Environments 
+#   hosts: galaxyservers
+#   tasks:
+#     - include: roles/galaxyproject.interactive_environments/tasks/install_dependencies.yml
 
-- name: setup local environment
-  hosts: galaxyservers
-  gather_facts: False
-  connection: local
-  roles:
-   - galaxyproject.interactive_environments
+# - name: setup local environment
+#   hosts: galaxyservers
+#   gather_facts: False
+#   connection: local
+#   roles:
+#    - galaxyproject.interactive_environments

@@ -1,7 +1,7 @@
 ---
 - name: galaxyproject.galaxy
-  src: galaxyproject.galaxy-tools
-  version: 0.8.4
+  src: galaxyproject.galaxy
+  #version: 0.8.4
 
 - name: galaxyproject.galaxy-tools
   src: galaxyproject.galaxy-tools
@@ -11,29 +11,29 @@
 
 - name: galaxyproject.nginx
   src: galaxyproject.nginx
-  version: 0.6.0
+  #version: 0.6.0
 
 - name: galaxyproject.postgresql
   src: galaxyproject.postgresql
-  version: 1.0.1
+  #version: 1.0.1
 
 - name: galaxyproject.proftpd
   src: galaxyproject.proftpd
 
 - name: natefoo.postgresql_objects
   src: natefoo.postgresql_objects
-  version: 1.1
+  #version: 1.1
 
 - name: uchida.miniconda 
   src: uchida.miniconda
-  version: 0.3.0
+  #version: 0.3.0
 
 - name: geerlingguy.repo-epel
   src: geerlingguy.repo-epel
 
 - name: geerlingguy.pip
   src: geerlingguy.pip
-  version: 1.0.0
+  #version: 1.0.0
 
 - name: usegalaxy-eu.supervisor
   src: https://github.com/usegalaxy-eu/ansible-role-supervisor
