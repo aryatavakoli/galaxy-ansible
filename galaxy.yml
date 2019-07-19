@@ -22,8 +22,6 @@
     - galaxyproject.galaxy
     - uchida.miniconda
     - usegalaxy-eu.supervisor
-    - galaxyproject.proftpd
-    - vidtd
   post_tasks:
     - name: Install uwsgidecorators
       pip:
@@ -62,11 +60,11 @@
   roles:
     - galaxyproject.nginx
 
-- name: Setup Toolshed
+- name: Setup Extra Roles
   hosts: galaxyservers
-  gather_facts: False
-  connection: local
   roles:
+   - galaxyproject.proftpd
+   - vidtd
    - galaxyproject.galaxy-tools
 
 - name: Install Dependecies for Interactive Environments 
@@ -74,9 +72,7 @@
   tasks:
     - include: roles/galaxyproject.interactive_environments/tasks/install_dependencies.yml
 
-- name: setup local environment
-  hosts: galaxyservers
-  gather_facts: False
-  connection: local
-  roles:
-   - galaxyproject.interactive_environments
+# - name: setup local environment
+#   hosts: galaxyservers
+#   roles:
+#    - galaxyproject.interactive_environments
