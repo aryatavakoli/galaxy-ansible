@@ -12,4 +12,4 @@ source_file=`find  deps/irida-galaxy-importer/ -name 'env.sh'`
 source $source_file
 cd $dir
 python irida_import.py -c
-supervisorctl restart gx:
+supervisorctl restart galaxy:

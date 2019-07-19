@@ -10,6 +10,23 @@
         pkg: ['python-psycopg2', 'git', 'python-virtualenv', 'make']
         update_cache: yes
         state: latest
+    - name: Install setools-libs 
+      yum:
+        name: setools-libs
+        state: latest
+    - name: Remove policycoreutils
+      yum:
+        name: policycoreutils-python
+        state: absent
+    - name: Install policycoreutils
+      yum:
+        name: policycoreutils-python
+        state: latest
+  handlers:
+    - name: Restart Galaxy
+      supervisorctl:
+        name: galaxy
+        state: restarted
   roles:
     - geerlingguy.repo-epel
     - geerlingguy.pip
@@ -21,45 +38,18 @@
     - galaxyproject.galaxy
     - uchida.miniconda
     - usegalaxy-eu.supervisor
+    - galaxyproject.nginx
   post_tasks:
     - name: Install uwsgidecorators
       pip:
         name: uwsgidecorators
         virtualenv: "{{ galaxy_venv_dir }}"
-    - name: Install libselinux-python
-      pip:
-        name: selinux
-        virtualenv: "{{ galaxy_venv_dir }}"
-  handlers:
-    - name: Restart Galaxy
-      supervisorctl:
-        name: galaxy
-        state: restarted
-
-- name: Setup Nginx
-  hosts: galaxyservers
-  become: yes
-  pre_tasks:
-  - name: Install setools-libs 
-    yum:
-      name: setools-libs
-      state: latest
-  - name: Remove policycoreutils
-    yum:
-      name: policycoreutils-python
-      state: absent
-  - name: Install policycoreutils
-    yum:
-      name: policycoreutils-python
-      state: latest
-  roles:
-    - galaxyproject.nginx
-    - vidtd
 
 - name: Setup Extra Roles
   hosts: galaxyservers
   become: yes
   roles:
+   - vidtd
    - galaxyproject.proftpd
    - galaxyproject.galaxy-tools
 
