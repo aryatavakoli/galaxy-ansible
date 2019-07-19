@@ -35,6 +35,9 @@
   src: geerlingguy.pip
   #version: 1.0.0
 
+- name: jimbydamonk.libselinux-python
+  src: jimbydamonk.libselinux-python
+
 - name: usegalaxy-eu.supervisor
   src: https://github.com/usegalaxy-eu/ansible-role-supervisor
 

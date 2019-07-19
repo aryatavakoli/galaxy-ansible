@@ -1,2 +1,2 @@
 [galaxyservers]
-galaxyservers.test.ca #ansible_connection=local
+galaxyservers.test.ca

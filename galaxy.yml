@@ -1,4 +1,3 @@
-# Refernce: https://galaxyproject.github.io/training-material/topics/admin/tutorials/ansible-galaxy/tutorial.html
 - hosts: galaxyservers
   become: yes
   pre_tasks:
@@ -6,19 +5,16 @@
       become: yes
       timezone:
         name: America/Vancouver
-
     - name: Install packages
-      package:
-        name: ['python-psycopg2', 'git', 'python-virtualenv', 'make']
+      yum:
+        pkg: ['python-psycopg2', 'git', 'python-virtualenv', 'make']
+        update_cache: yes
+        state: latest
 
-  handlers: 
-    - name: Restart Galaxy
-      supervisorctl:
-        name: galaxy
-        state: restarted
   roles:
     - geerlingguy.repo-epel
     - geerlingguy.pip
+    - jimbydamonk.libselinux-python
     - galaxyproject.postgresql
     - role: natefoo.postgresql_objects
       become: true
@@ -26,30 +22,61 @@
     - galaxyproject.galaxy
     - uchida.miniconda
     - usegalaxy-eu.supervisor
-    - galaxyproject.nginx
-    #- galaxyproject.proftpd
-    #- vidtd
+    - galaxyproject.proftpd
+    - vidtd
   post_tasks:
     - name: Install uwsgidecorators
       pip:
         name: uwsgidecorators
         virtualenv: "{{ galaxy_venv_dir }}"
 
-# - name: Setup Toolshed
-#   hosts: galaxyservers
-#   gather_facts: False
-#   connection: local
-#   roles:
-#    - galaxyproject.galaxy-tools
+    - name: Install libselinux-python
+      pip:
+        name: selinux
+        virtualenv: "{{ galaxy_venv_dir }}"
 
-# - name: Install Dependecies for Interactive Environments 
-#   hosts: galaxyservers
-#   tasks:
-#     - include: roles/galaxyproject.interactive_environments/tasks/install_dependencies.yml
+  handlers:
+    - name: Restart Galaxy
+      supervisorctl:
+        name: galaxy
+        state: restarted
 
-# - name: setup local environment
-#   hosts: galaxyservers
-#   gather_facts: False
-#   connection: local
-#   roles:
-#    - galaxyproject.interactive_environments
+- name: Setup Nginx
+  hosts: galaxyservers
+  become: yes
+  pre_tasks:
+  - name: Install setools-libs 
+    yum:
+      name: setools-libs
+      state: latest
+
+  - name: Remove policycoreutils
+    yum:
+      name: policycoreutils-python
+      state: absent
+
+  - name: Install policycoreutils
+    yum:
+      name: policycoreutils-python
+      state: latest
+  roles:
+    - galaxyproject.nginx
+
+- name: Setup Toolshed
+  hosts: galaxyservers
+  gather_facts: False
+  connection: local
+  roles:
+   - galaxyproject.galaxy-tools
+
+- name: Install Dependecies for Interactive Environments 
+  hosts: galaxyservers
+  tasks:
+    - include: roles/galaxyproject.interactive_environments/tasks/install_dependencies.yml
+
+- name: setup local environment
+  hosts: galaxyservers
+  gather_facts: False
+  connection: local
+  roles:
+   - galaxyproject.interactive_environments
