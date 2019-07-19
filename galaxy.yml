@@ -10,7 +10,6 @@
         pkg: ['python-psycopg2', 'git', 'python-virtualenv', 'make']
         update_cache: yes
         state: latest
-
   roles:
     - geerlingguy.repo-epel
     - geerlingguy.pip
@@ -27,12 +26,10 @@
       pip:
         name: uwsgidecorators
         virtualenv: "{{ galaxy_venv_dir }}"
-
     - name: Install libselinux-python
       pip:
         name: selinux
         virtualenv: "{{ galaxy_venv_dir }}"
-
   handlers:
     - name: Restart Galaxy
       supervisorctl:
@@ -47,30 +44,34 @@
     yum:
       name: setools-libs
       state: latest
-
   - name: Remove policycoreutils
     yum:
       name: policycoreutils-python
       state: absent
-
   - name: Install policycoreutils
     yum:
       name: policycoreutils-python
       state: latest
   roles:
     - galaxyproject.nginx
+    - vidtd
 
 - name: Setup Extra Roles
   hosts: galaxyservers
+  become: yes
   roles:
    - galaxyproject.proftpd
-   - vidtd
    - galaxyproject.galaxy-tools
 
 - name: Install Dependecies for Interactive Environments 
   hosts: galaxyservers
   tasks:
     - include: roles/galaxyproject.interactive_environments/tasks/install_dependencies.yml
+  post_tasks:
+  - name: Install pre-gyp with NPM
+    npm:
+      name: node-pre-gyp
+      global: yes
 
 # - name: setup local environment
 #   hosts: galaxyservers
