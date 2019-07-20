@@ -40,6 +40,11 @@
     - usegalaxy-eu.supervisor
     - galaxyproject.nginx
   post_tasks:
+    - name: Install packages
+      yum:
+        pkg: ['uwsgi', 'uwsgi-plugin-python2' ]
+        update_cache: yes
+        state: latest
     - name: Install uwsgidecorators
       pip:
         name: uwsgidecorators
