@@ -35,6 +35,9 @@
   src: geerlingguy.pip
   #version: 1.0.0
 
+- name: geerlingguy.git
+  src: geerlingguy.git
+
 - name: jimbydamonk.libselinux-python
   src: jimbydamonk.libselinux-python
 

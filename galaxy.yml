@@ -7,12 +7,8 @@
         name: America/Vancouver
     - name: Install packages
       yum:
-        pkg: ['python-psycopg2', 'git', 'python-virtualenv', 'make']
+        pkg: ['python-psycopg2', 'python-virtualenv', 'make']
         update_cache: yes
-        state: latest
-    - name: Install setools-libs 
-      yum:
-        name: setools-libs
         state: latest
     - name: Remove policycoreutils
       yum:
@@ -29,6 +25,7 @@
         state: restarted
   roles:
     - geerlingguy.repo-epel
+    - geerlingguy.git
     - geerlingguy.pip
     - jimbydamonk.libselinux-python
     - galaxyproject.postgresql
@@ -40,33 +37,28 @@
     - usegalaxy-eu.supervisor
     - galaxyproject.nginx
   post_tasks:
-    - name: Install packages
-      yum:
-        pkg: ['uwsgi', 'uwsgi-plugin-python2' ]
-        update_cache: yes
-        state: latest
     - name: Install uwsgidecorators
       pip:
         name: uwsgidecorators
         virtualenv: "{{ galaxy_venv_dir }}"
 
-- name: Setup Extra Roles
-  hosts: galaxyservers
-  become: yes
-  roles:
-   - vidtd
-   - galaxyproject.proftpd
-   - galaxyproject.galaxy-tools
+# - name: Setup Extra Roles
+#   hosts: galaxyservers
+#   become: yes
+#   roles:
+#    - vidtd
+#    - galaxyproject.proftpd
+#    - galaxyproject.galaxy-tools
 
-- name: Install Dependecies for Interactive Environments 
-  hosts: galaxyservers
-  tasks:
-    - include: roles/galaxyproject.interactive_environments/tasks/install_dependencies.yml
-  post_tasks:
-  - name: Install pre-gyp with NPM
-    npm:
-      name: node-pre-gyp
-      global: yes
+# - name: Install Dependecies for Interactive Environments 
+#   hosts: galaxyservers
+#   tasks:
+#     - include: roles/galaxyproject.interactive_environments/tasks/install_dependencies.yml
+#   post_tasks:
+#   - name: Install pre-gyp with NPM
+#     npm:
+#       name: node-pre-gyp
+#       global: yes
 
 # - name: setup local environment
 #   hosts: galaxyservers
