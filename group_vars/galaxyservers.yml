@@ -4,6 +4,7 @@
 galaxy_release_number: 19.05
 galaxy_commit_id: "release_{{galaxy_release_number}}"
 user_name: galaxy
+user_group: galaxy
 server_name: galaxyservers.test.ca
 
 # PostgreSQL
@@ -21,7 +22,7 @@ galaxy_manage_paths: true
 galaxy_layout: root-dir
 galaxy_root: /srv/galaxy
 galaxy_file_path: /data
-galaxy_user: {name: galaxy, shell: /bin/bash}
+galaxy_user: {name: "{{user_name}}", shell: /bin/bash}
 galaxy_config_style: yaml
 galaxy_force_checkout: true
 miniconda_prefix: "{{ galaxy_tool_dependency_dir }}/_conda"
@@ -34,7 +35,7 @@ interactive_environments_install_method: inplace
 
 galaxy_config:
   galaxy:
-    brand: "My Galaxy"
+    brand: "BCCDC Galaxy"
     admin_users: admin@example.org
     database_connection: "postgresql:///{{user_name}}?host=/var/run/postgresql"
     file_path: "{{ galaxy_file_path }}"
@@ -42,7 +43,7 @@ galaxy_config:
     shed_tool_data_dir: "{{ galaxy_mutable_data_dir }}/tool-data"
   uwsgi:
     # Default values
-    socket: 127.0.0.1:8080
+    socket: 127.0.0.1:4001
     buffer-size: 16384
     processes: 1
     threads: 4
@@ -115,7 +116,7 @@ nginx_enable_default_server: false
 # nginx_ssl_servers:
 #   - galaxy
 nginx_conf_http:
-  client_max_body_size: 1g
+  client_max_body_size: 10g
 nginx_remove_default_vhost: true
 # nginx_ssl_role: usegalaxy-eu.certbot
 # nginx_conf_ssl_certificate: /etc/ssl/certs/fullchain.pem

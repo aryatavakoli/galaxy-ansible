@@ -16,7 +16,7 @@ Vagrant.configure("2") do |config|
     c.vm.box = IMAGE
     c.vm.hostname = "galaxyservers.test.ca"
     c.vm.network "private_network", ip: "192.168.50.12"
-    c.vm.network "forwarded_port", guest: 80, host: 8080
+  #  c.vm.network "forwarded_port", guest: 80, host: 8080
   #  c.vm.network "forwarded_port", guest: 433, host: 40433
   end
     

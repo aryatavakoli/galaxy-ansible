@@ -1,3 +1,12 @@
+- name: Prepare Linux Enviroment
+  hosts: galaxyservers
+  become: yes
+  roles:
+    - geerlingguy.repo-epel
+    - geerlingguy.git
+    - geerlingguy.pip
+    - jimbydamonk.libselinux-python
+
 - hosts: galaxyservers
   become: yes
   pre_tasks:
@@ -7,7 +16,7 @@
         name: America/Vancouver
     - name: Install packages
       yum:
-        pkg: ['python-psycopg2', 'python-virtualenv', 'make']
+        pkg: ['python-psycopg2', 'python-virtualenv', 'make', 'uwsgi', 'uwsgi-plugin-python2', 'libsemanage-python']
         update_cache: yes
         state: latest
     - name: Remove policycoreutils
@@ -24,10 +33,6 @@
         name: galaxy
         state: restarted
   roles:
-    - geerlingguy.repo-epel
-    - geerlingguy.git
-    - geerlingguy.pip
-    - jimbydamonk.libselinux-python
     - galaxyproject.postgresql
     - role: natefoo.postgresql_objects
       become: true
@@ -41,14 +46,10 @@
       pip:
         name: uwsgidecorators
         virtualenv: "{{ galaxy_venv_dir }}"
-
-# - name: Setup Extra Roles
-#   hosts: galaxyservers
-#   become: yes
-#   roles:
-#    - vidtd
-#    - galaxyproject.proftpd
-#    - galaxyproject.galaxy-tools
+    # - name: Add www-data to Galaxy group
+    #   user:
+    #     name: www-data
+    #     groups: "{{user_group}}"
 
 # - name: Install Dependecies for Interactive Environments 
 #   hosts: galaxyservers
@@ -59,6 +60,15 @@
 #     npm:
 #       name: node-pre-gyp
 #       global: yes
+
+# - name: Setup Extra Roles
+#   hosts: galaxyservers
+#   become: yes
+#   roles:
+#    - vidtd
+#    - galaxyproject.proftpd
+#    - galaxyproject.galaxy-tools
+
 
 # - name: setup local environment
 #   hosts: galaxyservers

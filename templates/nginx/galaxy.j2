@@ -2,6 +2,7 @@ server {
     # Listen on port 443
     #listen        *:443 ssl default_server;
     listen          80 default_server;
+    listen [::]:80 default_server;
     # The virtualhost is our domain name
     server_name   "{{ inventory_hostname }}";
     #server_name   "{{ server_name }}";
@@ -13,7 +14,7 @@ server {
     # The most important location block, by default all requests are sent to uWSGI
     location / {
         # This is the backend to send the requests to.
-        uwsgi_pass 127.0.0.1:8080;
+        uwsgi_pass 127.0.0.1:4001;
         uwsgi_param UWSGI_SCHEME $scheme;
         include uwsgi_params;
     }
