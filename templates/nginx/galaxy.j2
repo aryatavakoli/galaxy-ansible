@@ -14,7 +14,7 @@ server {
     # The most important location block, by default all requests are sent to uWSGI
     location / {
         # This is the backend to send the requests to.
-        uwsgi_pass 127.0.0.1:4001;
+        uwsgi_pass 127.0.0.1:8080;
         uwsgi_param UWSGI_SCHEME $scheme;
         include uwsgi_params;
     }
