@@ -1,0 +1,56 @@
+---
+- name: Install required system packages
+  yum:
+    name: "{{ packages }}"
+    update_cache: yes
+    state: latest
+  vars:
+    packages:
+      - ant
+      - cmake
+      - curl
+      - gcc-c++
+      - gcc
+      - gcc-gfortran
+      - libffi-devel
+      - lapack-devel
+      - ncurses-devel
+      - openblas-devel
+      - pam-devel
+      - make
+      - mercurial
+      - openssh-server
+      - patch
+      - perl
+      - pkgconfig
+      - python-devel
+      - python-boto
+      - python-prettytable
+      - python-psycopg2
+      - python-virtualenv
+      - rsync
+      - samtools
+      - sudo
+      - swig
+      - sysstat
+      - unzip
+      - wget
+      - zlib-devel
+      - uwsgi
+      - uwsgi-plugin-python2
+      - libsemanage-python
+
+- name: Install packages for system maintenance
+  yum:
+    name: "{{ packages }}"
+    state: latest
+  vars:
+    packages:
+      - atop
+      - ipython
+      - iotop
+      - htop
+      - iftop
+      - nmon
+      - axel
+      - vim

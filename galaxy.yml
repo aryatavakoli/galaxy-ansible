@@ -6,7 +6,9 @@
     - geerlingguy.git
     - geerlingguy.pip
     - jimbydamonk.libselinux-python
-
+  tasks:
+    - include: centos-prep.yml
+    
 - hosts: galaxyservers
   become: yes
   pre_tasks:
@@ -14,11 +16,6 @@
       become: yes
       timezone:
         name: America/Vancouver
-    - name: Install packages
-      yum:
-        pkg: ['python-psycopg2', 'python-virtualenv', 'make', 'uwsgi', 'uwsgi-plugin-python2', 'libsemanage-python']
-        update_cache: yes
-        state: latest
     - name: Remove policycoreutils
       yum:
         name: policycoreutils-python
@@ -46,10 +43,6 @@
       pip:
         name: uwsgidecorators
         virtualenv: "{{ galaxy_venv_dir }}"
-    # - name: Add www-data to Galaxy group
-    #   user:
-    #     name: www-data
-    #     groups: "{{user_group}}"
 
 # - name: Install Dependecies for Interactive Environments 
 #   hosts: galaxyservers
