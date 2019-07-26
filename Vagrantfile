@@ -1,4 +1,4 @@
-IMAGE = "geerlingguy/centos7"
+IMAGE = "centos/7"
 Vagrant.configure("2") do |config|
 
   config.vm.provider "virtualbox" do |v|

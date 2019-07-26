@@ -43,6 +43,8 @@
       pip:
         name: uwsgidecorators
         virtualenv: "{{ galaxy_venv_dir }}"
+    - name: Change SELinux status
+      selinux: state=permissve
 
 # - name: Install Dependecies for Interactive Environments 
 #   hosts: galaxyservers

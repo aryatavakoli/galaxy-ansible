@@ -39,6 +39,7 @@
       - uwsgi
       - uwsgi-plugin-python2
       - libsemanage-python
+      - kernel-devel
 
 - name: Install packages for system maintenance
   yum:
