@@ -46,6 +46,9 @@
     - name: Change SELinux status
       selinux: state=permissve
 
+    - name: Set SELinux in permissive mode until the machine is rebooted
+      command: setenforce 0
+
 # - name: Install Dependecies for Interactive Environments 
 #   hosts: galaxyservers
 #   tasks:
