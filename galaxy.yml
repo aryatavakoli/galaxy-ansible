@@ -12,6 +12,11 @@
 - hosts: galaxyservers
   become: yes
   pre_tasks:
+    - name: Change SELinux status
+      selinux:
+        state: disabled
+    - name: Set SELinux in permissive mode until the machine is rebooted
+      command: setenforce 0
     - name: Set timezone to PST
       become: yes
       timezone:
@@ -43,11 +48,6 @@
       pip:
         name: uwsgidecorators
         virtualenv: "{{ galaxy_venv_dir }}"
-    - name: Change SELinux status
-      selinux: state=permissve
-
-    - name: Set SELinux in permissive mode until the machine is rebooted
-      command: setenforce 0
 
 # - name: Install Dependecies for Interactive Environments 
 #   hosts: galaxyservers

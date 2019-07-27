@@ -3,17 +3,19 @@
 # Galaxy
 galaxy_release_number: 19.05
 galaxy_commit_id: "release_{{galaxy_release_number}}"
-user_name: galaxy
-user_group: galaxy
+galaxy_user_name: galaxy
+#galaxy_user_group: galaxy
 server_name: galaxyservers.test.ca
+#galaxy_privsep_user: "{{galaxy_user_name}}"
 
 # PostgreSQL
 postgresql_objects_users:
-  - name: "{{user_name}}"
-    password: null
+  - name: "{{galaxy_user_name}}"
+    password: "{{galaxy_user_name}}"
+    encrypted: "yes"
 postgresql_objects_databases:
-  - name: "{{user_name}}"
-    owner: "{{user_name}}"
+  - name: "{{galaxy_user_name}}"
+    owner: "{{galaxy_user_name}}"
 
 # Galaxy
 galaxy_create_user: true
@@ -22,7 +24,7 @@ galaxy_manage_paths: true
 galaxy_layout: root-dir
 galaxy_root: /srv/galaxy
 galaxy_file_path: /data
-galaxy_user: {name: "{{user_name}}", shell: /bin/bash}
+galaxy_user: {name: "{{galaxy_user_name}}", shell: /bin/bash}
 galaxy_config_style: yaml
 galaxy_force_checkout: true
 miniconda_prefix: "{{ galaxy_tool_dependency_dir }}/_conda"
@@ -37,7 +39,7 @@ galaxy_config:
   galaxy:
     brand: "BCCDC Galaxy"
     admin_users: admin@example.org
-    database_connection: "postgresql:///{{user_name}}?host=/var/run/postgresql"
+    database_connection: "postgresql:///{{galaxy_user_name}}?host=/var/run/postgresql"
     file_path: "{{ galaxy_file_path }}"
     check_migrate_tools: false
     shed_tool_data_dir: "{{ galaxy_mutable_data_dir }}/tool-data"
@@ -73,8 +75,8 @@ galaxy_config:
 galaxy_restart_handler_name: Restart Galaxy
 
 # supervisord
-supervisor_socket_user: "{{user_name}}"
-supervisor_socket_chown: "{{user_name}}"
+supervisor_socket_user: "{{galaxy_user_name}}"
+supervisor_socket_chown: "{{galaxy_user_name}}"
 supervisor_programs:
   - name: galaxy
     state: present
