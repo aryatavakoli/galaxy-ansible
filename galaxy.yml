@@ -49,6 +49,19 @@
         name: uWSGI
         virtualenv: "{{ galaxy_venv_dir }}"
 
+- name: Setup Extra Roles
+  hosts: galaxyservers
+  become: yes
+  pre_task:
+    - name: Install ephemeris
+      pip:
+          name: ephemeris
+          virtualenv: "{{ galaxy_venv_dir }}"
+  roles:
+   - galaxyproject.galaxy-tools
+  #- vidtd
+  #- galaxyproject.proftpd
+
 # - name: Install Dependecies for Interactive Environments 
 #   hosts: galaxyservers
 #   tasks:
@@ -59,13 +72,7 @@
 #       name: node-pre-gyp
 #       global: yes
 
-# - name: Setup Extra Roles
-#   hosts: galaxyservers
-#   become: yes
-#   roles:
-#    - vidtd
-#    - galaxyproject.proftpd
-#    - galaxyproject.galaxy-tools
+
 
 
 # - name: setup local environment
