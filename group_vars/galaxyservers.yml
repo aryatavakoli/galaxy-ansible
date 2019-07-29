@@ -30,7 +30,6 @@ galaxy_force_checkout: true
 miniconda_prefix: "{{ galaxy_tool_dependency_dir }}/_conda"
 
 #Tools
-galaxy_tools_install_tools: no
 
 #IE
 interactive_environments_install_method: inplace
