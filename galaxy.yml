@@ -11,24 +11,6 @@
     
 - hosts: galaxyservers
   become: yes
-  pre_tasks:
-    - name: Change SELinux status
-      selinux:
-        state: disabled
-    - name: Set SELinux in permissive mode until the machine is rebooted
-      command: setenforce 0
-    - name: Set timezone to PST
-      become: yes
-      timezone:
-        name: America/Vancouver
-    - name: Remove policycoreutils
-      yum:
-        name: policycoreutils-python
-        state: absent
-    - name: Install policycoreutils
-      yum:
-        name: policycoreutils-python
-        state: latest
   handlers:
     - name: Restart Galaxy
       supervisorctl:
@@ -49,16 +31,17 @@
         name: uWSGI
         virtualenv: "{{ galaxy_venv_dir }}"
 
-- name: Setup Extra Roles
-  hosts: galaxyservers
-  become: yes
-  pre_task:
     - name: Install ephemeris
       pip:
           name: ephemeris
           virtualenv: "{{ galaxy_venv_dir }}"
-  roles:
-   - galaxyproject.galaxy-tools
+
+# - name: Setup Tools
+#   hosts: galaxyservers
+#   gather_facts: false
+#   become_user: "{{galaxy_user}}"
+#   roles:
+#    - galaxyproject.galaxy-tools
   #- vidtd
   #- galaxyproject.proftpd
 
