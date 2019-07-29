@@ -36,8 +36,6 @@
       - unzip
       - wget
       - zlib-devel
-      - uwsgi
-      - uwsgi-plugin-python2
       - libsemanage-python
       - kernel-devel
 

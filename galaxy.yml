@@ -44,9 +44,9 @@
     - usegalaxy-eu.supervisor
     - galaxyproject.nginx
   post_tasks:
-    - name: Install uwsgidecorators
+    - name: Install uWSGI
       pip:
-        name: uwsgidecorators
+        name: uWSGI
         virtualenv: "{{ galaxy_venv_dir }}"
 
 # - name: Install Dependecies for Interactive Environments 
