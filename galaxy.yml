@@ -31,17 +31,12 @@
         name: uWSGI
         virtualenv: "{{ galaxy_venv_dir }}"
 
-    - name: Install ephemeris
-      pip:
-          name: ephemeris
-          virtualenv: "{{ galaxy_venv_dir }}"
-
-# - name: Setup Tools
-#   hosts: galaxyservers
-#   gather_facts: false
-#   become_user: "{{galaxy_user}}"
-#   roles:
-#    - galaxyproject.galaxy-tools
+- name: Setup Tools
+  hosts: galaxyservers
+  gather_facts: false
+  become: yes
+  roles:
+   - galaxyproject.galaxy-tools
   #- vidtd
   #- galaxyproject.proftpd
 
