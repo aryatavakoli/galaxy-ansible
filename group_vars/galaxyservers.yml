@@ -32,10 +32,10 @@ galaxy_force_checkout: true
 miniconda_prefix: "{{ galaxy_tool_dependency_dir }}/_conda"
 
 #Tools
-# galaxy_tools_admin_user_preset_api_key: yes
-# galaxy_tools_api_key: '38945hykjsh78345j2987423jvg'
-galaxy_tools_install_tools: yes
-galaxy_tools_api_key: 252f16237954289ed5bd9d72fcc98a92
+galaxy_tools_galaxy_instance_url: "{{server_name}}"
+galaxy_tools_admin_user_preset_api_key: yes
+galaxy_tools_api_key: '38945hykjsh78345j2987423jvg'
+galaxy_tools_install_tools: no
 galaxy_tools_tool_list_files: [ "files/tool_list.yaml" ]
 #IE
 interactive_environments_install_method: inplace
@@ -48,6 +48,7 @@ galaxy_config:
     file_path: "{{ galaxy_file_path }}"
     check_migrate_tools: false
     shed_tool_data_dir: "{{ galaxy_mutable_data_dir }}/tool-data"
+    tool_sheds_config_file: "{{ galaxy_server_dir }}/config/tool_sheds_conf.xml"
   uwsgi:
     # Default values
     socket: 127.0.0.1:8080

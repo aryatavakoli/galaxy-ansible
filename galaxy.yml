@@ -31,10 +31,16 @@
         name: uWSGI
         virtualenv: "{{ galaxy_venv_dir }}"
 
+    - name: Import Toolsheds
+      copy:
+        src: files/tool_sheds_conf.xml
+        dest: "{{galaxy_server_dir}}/config"
+
 - name: Setup Tools
   hosts: galaxyservers
   gather_facts: false
   become: yes
+  become_user: "{{galaxy_user_name}}"
   roles:
    - galaxyproject.galaxy-tools
   #- vidtd
