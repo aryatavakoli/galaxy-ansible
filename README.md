@@ -75,7 +75,7 @@ Variables for this ansible playbook can be found in `group_vars/galaxyserver.yml
 Variable Name                                | Default Value                                                       | Usage
 ---                                          | ---                                                                 | ---
 `create_db`                          | `false`                                                             | Whether or not a database should be created at the default.
-`galaxy_admin_users`                 | `[empty string]`                                                    | The list of admin account emails, separated by commas, to put in the `admin_users` section of the `galaxy.yml` file.
+`galaxy_admin_users`                 | `[empty string]`                                                    | The list of admin account emails, separated by commas, to put in the `admin_users` section of the `galaxyservers.yml` file.
 `galaxy_root`                    | `/srv/galaxy`                                         | The root directory for the Galaxy instance to be installed to.
 `galaxy_server_dir`                  | `{{galaxy_root}}/server`                                  | The directory that the Galaxy repo is checked out into, and that Galaxy is run from.
 `galaxy_tool_list`                   | `[empty string]`                                                    | The list of tools, in a YAML format, to install to the Galaxy instance via Ephemeris. Tools are only installed if `install_tools == true`.
@@ -83,16 +83,10 @@ Variable Name                                | Default Value                    
 `galaxy_user_group`                  | `galaxy`                                                         | A group of `galaxy_user`. Most Galaxy files created by this module will belong to this group.
 `galaxy_commit_id`                     | `release_{{galaxy_release_number}}`                           | The branch of Galaxy to ensure is installed. It is better to just set `galaxy_release_number` and leave this as its default value unless the branch in not in the form of `release_xx.xx`.
 `install_tools`                      | `false`                                                             | Whether or not to install the tools listed in `galaxy_tool_list` via Ephemeris.
-`galaxy_api_key`                     | `''`                                                          | The Galaxy master API key to be put into the galaxy.yml config.
+`galaxy_api_key`                     | `''`                                                          | The Galaxy master API key to be put into the galaxyservers.yml config.
 `galaxy_config_dir`                  | `{{galaxy_root}}/config`                                  | The directory containing all of the managed config files.
 `galaxy_create_user`                 | `true`                                                             | Whether or not to create user `galaxy_user`. Set to `false` if user is managed through something like LDAP and/or another module.
 `galaxy_database_connection`         | `postgresql:///{{galaxy_user_name}}?host=/var/run/postgresql` | The address to the main database for Galaxy to use.
 `galaxy_release_number`              | `19.05`                                                             | The release *number* of Galaxy to be checked out; by default this value is appended to `release_` and then checked out.
-`server_name`                        | `galaxy.ca`                                            | Name of the Galaxy server. Used to populate the `server_name` field in galaxy.yml, and the `config.ini` file used by the irida_import tool.
+`server_name`                        | `galaxyservers.test.ca`                                            | Name of the Galaxy server. Used to populate the `server_name` field in galaxyservers.yml, and the `config.ini` file used by the irida_import tool.
 `galaxy_venv_dir`                           | `{{galaxy_root}}/venv`                                    | The location of the virtual environment Galaxy will run from within.
-`ldap_enable`                          | `false`                                                             | Whether or not LDAP will be used for authorization and authenticationL.
-`ldap_server`                          | `[empty string]`                                                             | Location of LDAP server
-`ldap_search_user`                          | `[empty string]`                                                             | Search user name for LDAP server
-`ldap_search_password`                          | `[empty string]`                                                             | Search user name password for LDAP server
-`ldap_search_base`                          | `[empty string]`                                                             | Search base for LDAP server
-`ldap_domain`                          | `[empty string]`                                                            | Domain for LDAP server
