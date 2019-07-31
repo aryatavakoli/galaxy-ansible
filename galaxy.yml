@@ -11,24 +11,6 @@
     
 - hosts: galaxyservers
   become: yes
-  pre_tasks:
-    - name: Change SELinux status
-      selinux:
-        state: disabled
-    - name: Set SELinux in permissive mode until the machine is rebooted
-      command: setenforce 0
-    - name: Set timezone to PST
-      become: yes
-      timezone:
-        name: America/Vancouver
-    - name: Remove policycoreutils
-      yum:
-        name: policycoreutils-python
-        state: absent
-    - name: Install policycoreutils
-      yum:
-        name: policycoreutils-python
-        state: latest
   handlers:
     - name: Restart Galaxy
       supervisorctl:
@@ -43,11 +25,27 @@
     - uchida.miniconda
     - usegalaxy-eu.supervisor
     - galaxyproject.nginx
-  post_tasks:
-    - name: Install uwsgidecorators
+  tasks:
+    - name: Install uWSGI
       pip:
-        name: uwsgidecorators
+        name: uWSGI
         virtualenv: "{{ galaxy_venv_dir }}"
+
+    - name: Import Toolsheds
+      copy:
+        src: files/tool_sheds_conf.xml
+        dest: "{{galaxy_server_dir}}/config"
+      #notify: Restart Galaxy
+
+- name: Setup Tools
+  hosts: galaxyservers
+  gather_facts: false
+  become: yes
+  become_user: "{{galaxy_user_name}}"
+  roles:
+   - galaxyproject.galaxy-tools
+  #- vidtd
+  #- galaxyproject.proftpd
 
 # - name: Install Dependecies for Interactive Environments 
 #   hosts: galaxyservers
@@ -59,13 +57,7 @@
 #       name: node-pre-gyp
 #       global: yes
 
-# - name: Setup Extra Roles
-#   hosts: galaxyservers
-#   become: yes
-#   roles:
-#    - vidtd
-#    - galaxyproject.proftpd
-#    - galaxyproject.galaxy-tools
+
 
 
 # - name: setup local environment

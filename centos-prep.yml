@@ -36,8 +36,6 @@
       - unzip
       - wget
       - zlib-devel
-      - uwsgi
-      - uwsgi-plugin-python2
       - libsemanage-python
       - kernel-devel
 
@@ -55,3 +53,23 @@
       - nmon
       - axel
       - vim
+
+- name: Change SELinux status
+  selinux:
+      state: disabled
+- name: Set SELinux in permissive mode until the machine is rebooted
+  command: setenforce 0
+
+- name: Set timezone to PST
+  become: yes
+  timezone:
+    name: America/Vancouver
+    
+- name: Remove policycoreutils
+  yum:
+      name: policycoreutils-python
+      state: absent
+- name: Install policycoreutils
+  yum:
+      name: policycoreutils-python
+      state: latest

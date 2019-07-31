@@ -1,6 +1,6 @@
 ---
-api_key: "<Galaxy Admin user API key>"
-galaxy_instance: "<IP address for target Galaxy instance>"
+# api_key: "<Galaxy Admin user API key>"
+# galaxy_instance: "<IP address for target Galaxy instance>"
 tools:
 
   ### Tools for AssemblyAnnotation v0.4 ###
