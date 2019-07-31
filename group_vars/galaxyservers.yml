@@ -33,10 +33,10 @@ miniconda_prefix: "{{ galaxy_tool_dependency_dir }}/_conda"
 
 #Tools
 galaxy_tools_galaxy_instance_url: "{{server_name}}"
-galaxy_tools_admin_user_preset_api_key: yes
-galaxy_tools_api_key: '38945hykjsh78345j2987423jvg'
-galaxy_tools_install_tools: no
-galaxy_tools_tool_list_files: [ "files/tool_list.yaml" ]
+#galaxy_tools_admin_user_preset_api_key: yes
+galaxy_tools_api_key: '02b7771bccd18fe377de4d9384881512'
+galaxy_tools_install_tools: yes
+galaxy_tools_tool_list_files: [ "files/irida_tools_list.yml" ]
 #IE
 interactive_environments_install_method: inplace
 
