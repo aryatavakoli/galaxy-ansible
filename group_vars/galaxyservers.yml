@@ -5,10 +5,12 @@ galaxy_release_number: 19.05
 galaxy_commit_id: "release_{{galaxy_release_number}}"
 galaxy_user_name: galaxy
 galaxy_user_group: galaxy
-server_name: galaxyservers.test.ca
+server_name: "{{inventory_hostname}}"
 #galaxy_privsep_user: "{{galaxy_user_name}}"
 galaxy_admin_name: admin
 galaxy_admin_email: admin@example.org
+galaxy_admin_pw: pw
+default_admin_api_key: admin
 
 # PostgreSQL
 postgresql_objects_users:
@@ -32,10 +34,13 @@ galaxy_force_checkout: true
 miniconda_prefix: "{{ galaxy_tool_dependency_dir }}/_conda"
 
 #Tools
+galaxy_tools_admin_user: "{{galaxy_admin_email}}"
+galaxy_tools_admin_user_password: "{{galaxy_admin_pw}}"
+galaxy_tools_admin_user_preset_api_key: yes
+galaxy_tools_api_key: "{{default_admin_api_key}}"
+galaxy_tools_create_bootstrap_user: yes
 galaxy_tools_galaxy_instance_url: "{{server_name}}"
-#galaxy_tools_admin_user_preset_api_key: yes
-galaxy_tools_api_key: '02b7771bccd18fe377de4d9384881512'
-galaxy_tools_install_tools: yes
+
 galaxy_tools_tool_list_files: [ "files/irida_tools_list.yml" ]
 #IE
 interactive_environments_install_method: inplace

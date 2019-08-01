@@ -22,7 +22,6 @@ config.vm.provision "shell", :inline => <<-SHELL
 SHELL
 
 config.vm.provision 'ansible' do |ansible|
-    ansible.become = true
     ansible.compatibility_mode = "2.0"
     ansible.config_file = 'ansible.cfg'
     ansible.inventory_path = 'hosts'
