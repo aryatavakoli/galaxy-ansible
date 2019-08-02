@@ -8,11 +8,11 @@ galaxy_user_group: galaxy
 server_name: "{{inventory_hostname}}"
 uwsgi_port: 8080
 
-#galaxy_privsep_user: "{{galaxy_user_name}}"
+# Admin Credentials 
 galaxy_admin_name: admin
 galaxy_admin_email: admin@example.org
 galaxy_admin_pw: pw
-default_admin_api_key: admin
+default_admin_api_key: 21231d2502aa3648fadd98f88c39127c
 
 # PostgreSQL
 postgresql_objects_users:
@@ -36,15 +36,17 @@ galaxy_force_checkout: true
 miniconda_prefix: "{{ galaxy_tool_dependency_dir }}/_conda"
 
 #Tools
+galaxy_tools_install_tools: yes
 galaxy_tools_galaxy_instance_url: "{{server_name}}"
-galaxy_tools_admin_user: "{{galaxy_admin_email}}"
-galaxy_tools_admin_user_password: "{{galaxy_admin_pw}}"
-galaxy_tools_admin_user_preset_api_key: yes
+galaxy_tools_tool_list_files: [ "files/tools_list.yaml" ]
 galaxy_tools_api_key: "{{default_admin_api_key}}"
 
-galaxy_tools_create_bootstrap_user: yes
+# galaxy_tools_admin_user: "{{galaxy_admin_email}}"
+# galaxy_tools_admin_user_password: "{{galaxy_admin_pw}}"
+# galaxy_tools_admin_user_preset_api_key: yes
+# galaxy_tools_create_bootstrap_user: yes
 
-galaxy_tools_tool_list_files: [ "files/irida_tools_list.yml" ]
+
 #IE
 interactive_environments_install_method: inplace
 
