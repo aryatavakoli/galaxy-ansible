@@ -6,7 +6,7 @@ galaxy_commit_id: "release_{{galaxy_release_number}}"
 galaxy_user_name: galaxy
 galaxy_user_group: galaxy
 server_name: "{{inventory_hostname}}"
-#uwsgi_port: 8080
+uwsgi_socket: 127.0.0.1:8080
 
 # Admin Credentials 
 galaxy_admin_name: admin
@@ -61,7 +61,7 @@ galaxy_config:
     tool_sheds_config_file: "{{ galaxy_server_dir }}/config/tool_sheds_conf.xml"
   uwsgi:
     # Default values
-    socket: 127.0.0.1:8080
+    socket: "{{uwsgi_socket}}"
     buffer-size: 16384
     processes: 1
     threads: 4
