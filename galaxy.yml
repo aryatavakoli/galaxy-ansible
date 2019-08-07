@@ -1,13 +1,13 @@
-# - name: Prepare Linux Enviroment
-#   hosts: galaxyservers
-#   become: yes
-#   roles:
-#     - geerlingguy.repo-epel
-#     - geerlingguy.git
-#     - geerlingguy.pip
-#     - jimbydamonk.libselinux-python
-#   tasks:
-#     - include: centos-prep.yml
+- name: Prepare Linux Enviroment
+  hosts: galaxyservers
+  become: yes
+  roles:
+    - geerlingguy.repo-epel
+    - geerlingguy.git
+    - geerlingguy.pip
+    - jimbydamonk.libselinux-python
+  tasks:
+    - include: centos-prep.yml
     
 - hosts: galaxyservers
   become: yes
@@ -37,13 +37,6 @@
         dest: "{{galaxy_server_dir}}/config"
       notify: Restart Galaxy
 
-- name: Setup Tools
-  hosts: galaxyservers
-  gather_facts: false
-  become: yes
-  become_user: "{{galaxy_user_name}}"
-  roles:
-   - galaxyproject.galaxy-tools
   #- vidtd
   #- galaxyproject.proftpd
 
@@ -56,9 +49,6 @@
 #     npm:
 #       name: node-pre-gyp
 #       global: yes
-
-
-
 
 # - name: setup local environment
 #   hosts: galaxyservers

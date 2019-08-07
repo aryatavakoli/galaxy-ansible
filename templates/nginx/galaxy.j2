@@ -5,7 +5,6 @@ server {
     listen [::]:80 default_server;
     # The virtualhost is our domain name
     server_name   "{{ inventory_hostname }}";
-    #server_name   "{{ server_name }}";
 
     # Our log files will go here.
     access_log  /var/log/nginx/access.log;

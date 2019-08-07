@@ -11,7 +11,7 @@
 
 - name: galaxyproject.nginx
   src: galaxyproject.nginx
-  #version: 0.6.0
+  version: 0.6.2
 
 - name: galaxyproject.postgresql
   src: galaxyproject.postgresql
@@ -33,7 +33,6 @@
 
 - name: geerlingguy.pip
   src: geerlingguy.pip
-  #version: 1.0.0
 
 - name: geerlingguy.git
   src: geerlingguy.git
@@ -43,6 +42,7 @@
 
 - name: usegalaxy-eu.supervisor
   src: https://github.com/usegalaxy-eu/ansible-role-supervisor
+  #version: 2.0.2
 
 - name: usegalaxy-eu.certbot
   src: https://github.com/usegalaxy-eu/ansible-certbot
