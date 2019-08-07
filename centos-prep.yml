@@ -57,6 +57,7 @@
 - name: Change SELinux status
   selinux:
       state: disabled
+      
 - name: Set SELinux in permissive mode until the machine is rebooted
   command: setenforce 0
 
