@@ -7,9 +7,9 @@ galaxy_user_name: galaxy
 galaxy_user_group: galaxy
 server_name: "{{inventory_hostname}}"
 uwsgi_socket: 127.0.0.1:8080
+install_path: /srv/galaxy
 
 # Admin Credentials 
-galaxy_admin_name: admin
 galaxy_admin_emails: admin@example.org
 galaxy_admin_pw: pw
 default_admin_api_key: b4fa739c2525dc4d1bcc763b685c7459
@@ -28,7 +28,7 @@ galaxy_create_user: true
 galaxy_separate_privileges: true
 galaxy_manage_paths: true
 galaxy_layout: root-dir
-galaxy_root: /srv/galaxy
+galaxy_root: "{{install_path}}"
 galaxy_file_path: /data
 galaxy_user: {name: "{{galaxy_user_name}}", shell: /bin/bash}
 galaxy_config_style: yaml
