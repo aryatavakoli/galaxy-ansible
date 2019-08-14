@@ -46,7 +46,7 @@ def gather_arguments():
     parser.add_argument('-t', dest='dtd_config', help='the config file to edit')
     parser.add_argument('-j', dest='job_config', help='the job config file, containing all of the destinations. usually named `job_conf.xml`.')
     parser.add_argument('-c', dest='config_file', help="The vidtd config file.")
-    parser.add_argument('-d', dest='dtd_app', help="Galaxy's dynamic_tool_destination.py file. Defaults to `/Drives/P/Galaxies/main_nml/galaxy-prod/server/lib/galaxy/jobs/dynamic_tool_destination.py`.")
+    parser.add_argument('-d', dest='dtd_app', help="Galaxy's dynamic_tool_destination.py file. Defaults to `galaxy/server/lib/galaxy/jobs/dynamic_tool_destination.py`.")
     parser.add_argument('-v', dest='venv', help="The virtual environment that Galaxy runs in, if applicable.")
     args = parser.parse_args()
 

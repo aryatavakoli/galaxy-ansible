@@ -1,6 +1,6 @@
 # BCCDC Galaxy-Ansible
 
-#### Python 2.7 must be installed on the client machine that Ansible will deploy to.
+#### Python 2.7 must be installed on the client machine that Galaxy will be deployed to.
 
 **NOTE: These scripts only work on an Instance of CentOS 7. These Scripts will also disable SElinux**
 
@@ -16,6 +16,7 @@ Currently Functional Features:
 - [ ] SGE
 - [ ] Interactive Enviroments
 - [ ] ProFTP
+- [ ] IRIDA Importer tool
 
 ## Table of Contents
 - [Overview](#-overview)
@@ -24,12 +25,8 @@ Currently Functional Features:
 - [Terminology](#-terminology)
 - [Variables](#-variables)
 	- [What they are](#-what-they-are)
-- [Installation](#-installation)
-	- [Preparing the server](#-preparing-the-server)
-	- [Running the scripts](#-running-the-scripts)
-	- [Making sure it worked](#-making-sure-it-worked)
-- [File Structure](#-file-structure)
 - [Testing](#-testing)
+- [Special Thanks](#-thanks)
 
 
 ### <a name="-scripts-at-a-high-level"></a> Scripts at a high level
@@ -112,7 +109,7 @@ Variable Name                                | Default Value                    
 
 ### Galaxy Variables
 
-Other variables Galaxy uses. The defaults for these can be found in the defaults of `galaxyproject.galaxy-tools`.
+Other variables Galaxy uses. The defaults for these can be found in the `defaults/main.yml` of `galaxyproject.galaxy`.
 
 Variable Name                                | Default Value                                                       | Usage
 ---                                          | ---                                                                 | ---
@@ -122,3 +119,21 @@ Variable Name                                | Default Value                    
 `galaxy_config_dir`                  | `{{galaxy_root}}/config`                                  | The directory containing all of the managed config files.
 `galaxy_database_connection`         | `postgresql:///{{galaxy_user_name}}?host=/var/run/postgresql` | The address to the main database for Galaxy to use.
 `galaxy_venv_dir`                           | `{{galaxy_root}}/venv`                                    | The location of the virtual environment Galaxy will run from within.
+
+## <a name="-testing"></a> Testing
+
+Currently, testing is done via Vagrant. Installation of Vagrant, Ansible, and Virtualbox on your local machine can be found [here](https://github.com/aryatavakoli/kubernetes-vagrant)
+
+### The Vagrantfile
+All configurations for the testing enviroment are found in the `Vagrantfile`.
+
+### Mapping IP Address and Hostname of the Vagrant VM
+This line has to be added to `etc/hosts`:
+```sh 
+192.168.50.12 galaxyservers.test.ca
+```
+Alternatively, modify your hosts file automatically by installing [landrush](https://github.com/vagrant-landrush/landrush) with:
+```sh 
+$ vagrant plugin install landrush
+```
+### Run the playbook on Vagrant
