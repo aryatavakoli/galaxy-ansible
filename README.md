@@ -26,6 +26,7 @@ Currently Functional Features:
 - [Variables](#-variables)
 	- [What they are](#-what-they-are)
 - [Testing](#-testing)
+- [Deploying](#-running)
 - [Special Thanks](#-thanks)
 
 
@@ -137,3 +138,43 @@ Alternatively, modify your hosts file automatically by installing [landrush](htt
 $ vagrant plugin install landrush
 ```
 ### Run the playbook on Vagrant
+```sh
+$ vagrant up
+```
+## <a name="-running"></a> Deploying to a Remote Node
+
+A SSH Key-pair must be generated for your machine and the Remote node. A good guide can be found [here](https://www.digitalocean.com/community/tutorials/how-to-set-up-ssh-keys-on-centos7)
+
+### Clone this repo
+```sh
+$ git clone https://github.com/aryatavakoli/bccdc-galaxy-ansible.git
+```
+
+### Change Directory to this repo
+```sh
+$ cd bccdc-galay-ansible
+```
+
+### Add the hostname of your remote nodes to hosts
+
+```sh
+$ nano hosts
+```
+Add hostnames here:
+```sh
+[galaxyservers]
+galaxyservers.test.ca #Vagrant VM
+<Add Hostnames here>
+```
+
+### Install required roles to run playbook
+```sh
+$ ansible-galaxy install -r requirements.yml
+```
+
+Many of the roles here are derviced from the [this galaxy tutorial](https://galaxyproject.github.io/training-material/topics/admin/tutorials/ansible-galaxy/tutorial.html)
+
+### Deploy and run playbook
+```sh
+$ ansible-playbook -i hosts galaxy.yml
+```
