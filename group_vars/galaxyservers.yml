@@ -9,6 +9,13 @@ server_name: "{{inventory_hostname}}"
 uwsgi_socket: 127.0.0.1:8080
 install_path: /srv/galaxy
 
+#Booleans
+install_nginx: true
+install_supervisor: true
+create_db: true
+install_miniconda: true
+sys_prep: true
+
 # Admin Credentials 
 galaxy_admin_emails: admin@example.org
 galaxy_admin_pw: pw

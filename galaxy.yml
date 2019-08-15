@@ -2,12 +2,17 @@
   hosts: galaxyservers
   become: yes
   roles:
-    - geerlingguy.repo-epel
-    - geerlingguy.git
-    - geerlingguy.pip
-    - jimbydamonk.libselinux-python
+    - role: geerlingguy.repo-epel
+      when: sys_prep == true
+    - role: geerlingguy.git
+      when: sys_prep == true
+    - role: geerlingguy.pip
+      when: sys_prep == true
+    - role: jimbydamonk.libselinux-python
+      when: sys_prep == true
   tasks:
     - include: centos-prep.yml
+      when: sys_prep == true
     
 - hosts: galaxyservers
   become: yes
@@ -17,14 +22,19 @@
         name: galaxy
         state: restarted
   roles:
-    - galaxyproject.postgresql
+    - role: galaxyproject.postgresql
+      when: create_db == true
     - role: natefoo.postgresql_objects
       become: true
       become_user: postgres
+      when: create_db == true
     - galaxyproject.galaxy
-    - uchida.miniconda
-    - usegalaxy-eu.supervisor
-    - galaxyproject.nginx
+    - role: uchida.miniconda
+      when: install_miniconda == true
+    - role: usegalaxy-eu.supervisor
+      when: install_supervisor == true
+    - role: galaxyproject.nginx
+      when: install_nginx == true
   tasks:
     - name: Install uWSGI
       pip:
