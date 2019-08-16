@@ -6,12 +6,12 @@ Uses Ansible to automatically deploy an Instance of Galaxy (galaxyproject.org) t
 
 Currently Functional Features:
 - [x] Galaxy
-- [x] miniconda
+- [x] Miniconda
 - [x] Tool-shed Imports
 - [x] PostgreSQL
-- [x] nginx
-- [x] certbot
-- [x] supervisor
+- [x] Nginx
+- [x] Certbot
+- [x] Supervisor
 - [ ] Galaxy-tools (Functional but needs to be reworked)
 - [ ] SGE
 - [ ] Interactive Enviroments
