@@ -12,7 +12,7 @@ Currently Functional Features:
 - [x] Nginx
 - [x] Certbot
 - [x] Supervisor
-- [ ] Galaxy-tools (Functional but needs to be reworked)
+- [x] Galaxy-tools (Functional but needs to be reworked)
 - [ ] SGE
 - [ ] Interactive Enviroments
 - [ ] ProFTP
