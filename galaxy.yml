@@ -43,6 +43,13 @@
         dest: "{{galaxy_server_dir}}/config"
       notify: Restart Galaxy
 
+- name: Setup Tools
+  hosts: galaxyservers
+  gather_facts: false
+  become: yes
+  roles:
+   - galaxyproject.galaxy-tools
+
   #- vidtd
   #- galaxyproject.proftpd
 
