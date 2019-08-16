@@ -2,14 +2,10 @@
   hosts: galaxyservers
   become: yes
   roles:
-    - role: geerlingguy.repo-epel
-      when: sys_prep == true
-    - role: geerlingguy.git
-      when: sys_prep == true
-    - role: geerlingguy.pip
-      when: sys_prep == true
-    - role: jimbydamonk.libselinux-python
-      when: sys_prep == true
+    - geerlingguy.repo-epel
+    - geerlingguy.git
+    - geerlingguy.pip
+    - jimbydamonk.libselinux-python
   tasks:
     - include: centos-prep.yml
       when: sys_prep == true
