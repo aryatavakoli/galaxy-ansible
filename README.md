@@ -1,7 +1,6 @@
-# bccdc-galaxy-ansible
-Uses Ansible to automatically deploy an Instance of Galaxy (galaxyproject.org) to CentOS Distrubutions
-# BCCDC Galaxy-Ansible
 
+# BCCDC Galaxy-Ansible
+Uses Ansible to automatically deploy an Instance of Galaxy (galaxyproject.org) to CentOS Distrubutions
 #### Python 2.7 must be installed on the client machine that Galaxy will be deployed to.
 
 **NOTE: These scripts only work on an Instance of CentOS 7. These Scripts will also disable SElinux**
