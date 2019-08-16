@@ -6,13 +6,20 @@ galaxy_commit_id: "release_{{galaxy_release_number}}"
 galaxy_user_name: galaxy
 galaxy_user_group: galaxy
 server_name: "{{inventory_hostname}}"
-#uwsgi_port: 8080
+uwsgi_socket: 127.0.0.1:8080
+install_path: /srv/galaxy
+
+#Booleans
+install_nginx: true
+install_supervisor: true
+create_db: true
+install_miniconda: true
+sys_prep: true
 
 # Admin Credentials 
-galaxy_admin_name: admin
 galaxy_admin_emails: admin@example.org
 galaxy_admin_pw: pw
-default_admin_api_key: b4fa739c2525dc4d1bcc763b685c7459
+default_admin_api_key: ''
 
 # PostgreSQL
 postgresql_objects_users:
@@ -28,7 +35,7 @@ galaxy_create_user: true
 galaxy_separate_privileges: true
 galaxy_manage_paths: true
 galaxy_layout: root-dir
-galaxy_root: /srv/galaxy
+galaxy_root: "{{install_path}}"
 galaxy_file_path: /data
 galaxy_user: {name: "{{galaxy_user_name}}", shell: /bin/bash}
 galaxy_config_style: yaml
@@ -36,19 +43,15 @@ galaxy_force_checkout: true
 miniconda_prefix: "{{ galaxy_tool_dependency_dir }}/_conda"
 
 #Tools
-galaxy_tools_install_tools: yes
+galaxy_tools_install_tools: no
 galaxy_tools_galaxy_instance_url: "{{server_name}}"
-galaxy_tools_tool_list_files: [ "files/irida_tools_list.yaml" ]
+galaxy_tools_tool_list_files: [ "files/tools_list.yaml" ]
 galaxy_tools_api_key: "{{default_admin_api_key}}"
 
 # galaxy_tools_admin_user: "{{galaxy_admin_emails}}"
 # galaxy_tools_admin_user_password: "{{galaxy_admin_pw}}"
 # galaxy_tools_admin_user_preset_api_key: yes
 # galaxy_tools_create_bootstrap_user: yes
-
-
-#IE
-interactive_environments_install_method: inplace
 
 galaxy_config:
   galaxy:
@@ -61,7 +64,7 @@ galaxy_config:
     tool_sheds_config_file: "{{ galaxy_server_dir }}/config/tool_sheds_conf.xml"
   uwsgi:
     # Default values
-    socket: 127.0.0.1:8080
+    socket: "{{uwsgi_socket}}"
     buffer-size: 16384
     processes: 1
     threads: 4
@@ -139,3 +142,6 @@ nginx_remove_default_vhost: true
 # nginx_ssl_role: usegalaxy-eu.certbot
 # nginx_conf_ssl_certificate: /etc/ssl/certs/fullchain.pem
 # nginx_conf_ssl_certificate_key: /etc/ssl/user/privkey-nginx.pem
+
+#IE
+interactive_environments_install_method: inplace

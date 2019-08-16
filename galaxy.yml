@@ -8,6 +8,7 @@
     - jimbydamonk.libselinux-python
   tasks:
     - include: centos-prep.yml
+      when: sys_prep == true
     
 - hosts: galaxyservers
   become: yes
@@ -17,14 +18,19 @@
         name: galaxy
         state: restarted
   roles:
-    - galaxyproject.postgresql
+    - role: galaxyproject.postgresql
+      when: create_db == true
     - role: natefoo.postgresql_objects
       become: true
       become_user: postgres
+      when: create_db == true
     - galaxyproject.galaxy
-    - uchida.miniconda
-    - usegalaxy-eu.supervisor
-    - galaxyproject.nginx
+    - role: uchida.miniconda
+      when: install_miniconda == true
+    - role: usegalaxy-eu.supervisor
+      when: install_supervisor == true
+    - role: galaxyproject.nginx
+      when: install_nginx == true
   tasks:
     - name: Install uWSGI
       pip:
@@ -36,6 +42,13 @@
         src: files/tool_sheds_conf.xml
         dest: "{{galaxy_server_dir}}/config"
       notify: Restart Galaxy
+
+- name: Setup Tools
+  hosts: galaxyservers
+  gather_facts: false
+  become: yes
+  roles:
+   - galaxyproject.galaxy-tools
 
   #- vidtd
   #- galaxyproject.proftpd
