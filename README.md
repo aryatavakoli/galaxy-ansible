@@ -1,9 +1,8 @@
 
 # BCCDC Galaxy-Ansible
-Uses Ansible to automatically deploy an Instance of Galaxy (galaxyproject.org) to CentOS Distrubutions
-#### Python 2.7 must be installed on the client machine that Galaxy will be deployed to.
+Created for the BC Centre for Disease Control by [Arya Tavakoli](https://github.com/aryatavakoli) as part of the FAS Co-op Program at Simon Fraser University 
 
-**NOTE: These scripts only work on an Instance of CentOS 7. These Scripts will also disable SElinux**
+Uses Ansible to automatically deploy an Instance of Galaxy (galaxyproject.org) to CentOS Distrubutions
 
 Currently Functional Features:
 - [x] Galaxy
@@ -28,12 +27,14 @@ Currently Functional Features:
 	- [What they are](#-what-they-are)
 - [Testing](#-testing)
 - [Deploying](#-running)
-- [Special Thanks](#-thanks)
-
 
 ### <a name="-scripts-at-a-high-level"></a> Scripts at a high level
 
 A detailed explanation of each variable and their function will be discussed in the next section.
+
+#### Python 2.7 must be installed on the remote node that Galaxy will be deployed to.
+
+**NOTE: These scripts only work on an Instance of CentOS 7. These Scripts will also disable SElinux**
 
 At a high level, the `galaxy.yml` does the following:
 
@@ -162,7 +163,9 @@ $ cd bccdc-galay-ansible
 $ nano hosts
 ```
 Add hostnames here:
-```sh
+```sh## <a name="-thanks"></a> Special Thanks
+
+###
 [galaxyservers]
 galaxyservers.test.ca #Vagrant VM
 <Add Hostnames here>
