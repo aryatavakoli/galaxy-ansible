@@ -125,7 +125,7 @@ Variable Name                                | Default Value                    
 
 ## <a name="-testing"></a> Testing
 
-Currently, testing is done via Vagrant. Installation of Vagrant, Ansible, and Virtualbox on your local machine can be found [here](https://github.com/aryatavakoli/kubernetes-vagrant)
+Currently, testing is done via Vagrant. Installation of Vagrant,Ansible,and Virtualbox can be found [here](https://github.com/aryatavakoli/kubernetes-vagrant)
 
 ### The Vagrantfile
 All configurations for the testing enviroment are found in the `Vagrantfile`.
