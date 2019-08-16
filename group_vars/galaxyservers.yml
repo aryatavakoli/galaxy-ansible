@@ -33,6 +33,7 @@ postgresql_objects_databases:
 # Galaxy
 galaxy_create_user: true
 galaxy_separate_privileges: true
+galaxy_manage_database: "{{create_db}}"
 galaxy_manage_paths: true
 galaxy_layout: root-dir
 galaxy_root: "{{install_path}}"
