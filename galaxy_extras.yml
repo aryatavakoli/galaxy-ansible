@@ -1,0 +1,16 @@
+  #- galaxyproject.proftpd
+
+# - name: Install Dependecies for Interactive Environments 
+#   hosts: galaxyservers
+#   tasks:
+#     - include: roles/galaxyproject.interactive_environments/tasks/install_dependencies.yml
+#   post_tasks:
+#   - name: Install pre-gyp with NPM
+#     npm:
+#       name: node-pre-gyp
+#       global: yes
+
+# - name: setup local environment
+#   hosts: galaxyservers
+#   roles:
+#    - galaxyproject.interactive_environments

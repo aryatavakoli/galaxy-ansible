@@ -1,0 +1,18 @@
+- name: Prepare Linux Enviroment
+  import_playbook: centos_prep.yml
+  when: sys_prep == true
+
+- name: Install PostgreSQL
+  import_playbook: postgres.yml
+  when: create_db == true
+
+- name: Install Galaxy, Miniconda, and Supervisor
+  import_playbook: galaxy.yml
+
+- name: Install Nginx
+  import_playbook: nginx.yml
+  when: install_nginx == true
+
+- name: Install Galaxy Tools
+  import_playbook: install_tools.yml
+  when: install_tools ==  true

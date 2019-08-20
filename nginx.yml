@@ -1,0 +1,5 @@
+- name: Install Nginx
+  hosts: galaxyservers
+  become: yes
+  roles:
+    - galaxyproject.nginx

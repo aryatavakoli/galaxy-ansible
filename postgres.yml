@@ -1,0 +1,7 @@
+- name: Install PostgreSQL
+  hosts: galaxyservers
+  become: yes
+  roles:
+    - galaxyproject.postgresql
+    - role: natefoo.postgresql_objects
+      become_user: postgres
