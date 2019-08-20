@@ -1,15 +1,3 @@
-- name: Prepare Linux Enviroment
-  hosts: galaxyservers
-  become: yes
-  roles:
-    - geerlingguy.repo-epel
-    - geerlingguy.git
-    - geerlingguy.pip
-    - jimbydamonk.libselinux-python
-  tasks:
-    - include: centos-prep.yml
-      when: sys_prep == true
-    
 - hosts: galaxyservers
   become: yes
   handlers:
@@ -18,19 +6,10 @@
         name: galaxy
         state: restarted
   roles:
-    - role: galaxyproject.postgresql
-      when: create_db == true
-    - role: natefoo.postgresql_objects
-      become: true
-      become_user: postgres
-      when: create_db == true
     - galaxyproject.galaxy
-    - role: uchida.miniconda
-      when: install_miniconda == true
-    - role: usegalaxy-eu.supervisor
-      when: install_supervisor == true
-    - role: galaxyproject.nginx
-      when: install_nginx == true
+    - uchida.miniconda
+    - usegalaxy-eu.supervisor
+    - vidtd
   tasks:
     - name: Install uWSGI
       pip:
@@ -42,28 +21,3 @@
         src: files/tool_sheds_conf.xml
         dest: "{{galaxy_server_dir}}/config"
       notify: Restart Galaxy
-
-- name: Setup Tools
-  hosts: galaxyservers
-  gather_facts: false
-  become: yes
-  roles:
-   - galaxyproject.galaxy-tools
-
-  #- vidtd
-  #- galaxyproject.proftpd
-
-# - name: Install Dependecies for Interactive Environments 
-#   hosts: galaxyservers
-#   tasks:
-#     - include: roles/galaxyproject.interactive_environments/tasks/install_dependencies.yml
-#   post_tasks:
-#   - name: Install pre-gyp with NPM
-#     npm:
-#       name: node-pre-gyp
-#       global: yes
-
-# - name: setup local environment
-#   hosts: galaxyservers
-#   roles:
-#    - galaxyproject.interactive_environments

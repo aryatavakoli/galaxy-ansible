@@ -15,6 +15,7 @@ install_supervisor: true
 create_db: true
 install_miniconda: true
 sys_prep: true
+install_tools: no
 
 # Admin Credentials 
 galaxy_admin_emails: admin@example.org
@@ -44,7 +45,6 @@ galaxy_force_checkout: true
 miniconda_prefix: "{{ galaxy_tool_dependency_dir }}/_conda"
 
 #Tools
-galaxy_tools_install_tools: no
 galaxy_tools_galaxy_instance_url: "{{server_name}}"
 galaxy_tools_tool_list_files: [ "files/tools_list.yaml" ]
 galaxy_tools_api_key: "{{default_admin_api_key}}"

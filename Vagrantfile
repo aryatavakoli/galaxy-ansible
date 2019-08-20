@@ -28,6 +28,6 @@ config.vm.provision 'ansible' do |ansible|
     ansible.galaxy_role_file = 'requirements.yml'
     ansible.galaxy_roles_path = 'roles'
     ansible.galaxy_command = 'ansible-galaxy install --role-file=%{role_file} --roles-path=%{roles_path} --force'
-    ansible.playbook = "galaxy.yml"
+    ansible.playbook = "main.yml"
   end
 end
