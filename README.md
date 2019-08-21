@@ -13,7 +13,7 @@ Currently Functional Features:
 - [x] Certbot
 - [x] Supervisor
 - [x] Galaxy-tools (Functional but needs to be reworked)
-- [ ] SGE
+- [ ] Grid Engine
 - [ ] Interactive Enviroments
 - [ ] ProFTP
 - [ ] IRIDA Importer tool
