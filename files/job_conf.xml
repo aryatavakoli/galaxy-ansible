@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<job_conf>
+   <plugins>
+        <plugin id="drmaa" type="runner" load="galaxy.jobs.runners.drmaa:DRMAAJobRunner" workers="1">
+         <param id="drmaa_library_path">/opt/sge/lib/lx-amd64/libdrmaa.so</param>
+        </plugin>
+   </plugins>
+
+   <handlers>
+        <handler id="main" />
+   </handlers>
+</job_conf>

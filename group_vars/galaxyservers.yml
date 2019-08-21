@@ -9,6 +9,9 @@ server_name: "{{inventory_hostname}}"
 uwsgi_socket: 127.0.0.1:8080
 install_path: /srv/galaxy
 
+#SGE
+sge_root_dir: /srv/sge
+
 #Booleans
 install_nginx: true
 install_supervisor: true
