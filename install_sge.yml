@@ -3,30 +3,41 @@
   hosts: galaxyservers
   become: yes
   pre_tasks:
-    - name: Creates directory for SGE
+    - name: Creates directory for SGE source
+      file:
+        path: "{{sge_source_dir}}"
+        state: directory
+    - name: Creates directory for SGE root
       file:
         path: "{{sge_root_dir}}"
         state: directory
     - name: Install required system packages
       yum:
-        name: "{{ packages }}"
+        name: "{{packages}}"
         update_cache: yes
         state: latest
       vars:
         packages:
           - jemalloc-devel
+          - csh
           - openssl-devel
           - ncurses-devel
           - libXmu-devel
           - hwloc-devel
-          - hwloc hwloc-libs
+          - hwloc 
+          - hwloc-libs
           - java-devel
           - javacc
-          - ant-junit
+          - motif-devel 
           - libdb-devel
+          - ant-junit
           - db4-utils
           - perl-XML-Simple
           - perl-Env
+          - motif-devel
+          - ksh
+          - xterm
+
     - name: Ensure group sgeadmin exists
       group:
         name: sgeadmin
@@ -37,7 +48,7 @@
         name: sgeadmin
         uid: 495
         shell: /bin/bash
-        groups: sgeadmin,sudo
+        groups: sgeadmin
         comment: "SGE Admin"
         create_home: yes
         append: yes
@@ -50,18 +61,27 @@
         line: '%sgeadmin ALL=(ALL) NOPASSWD: ALL'
         validate: visudo -cf %s
   tasks:
-    - name: Download SGE from Source
-      get_url: 
-        url: https://arc.liv.ac.uk/downloads/SGE/releases/8.1.9/sge-8.1.9.tar.gz
-        dest: "{{sge_root_dir}}"
-    - name: Extract SGE tar file
+    - name: Get and Extract SGE tar fileE
       unarchive:
-        src: "{{sge_root_dir}}/sge-8.1.9.tar.gz"
-        dest: "{{sge_root_dir}}"
+        src: https://arc.liv.ac.uk/downloads/SGE/releases/8.1.9/sge-8.1.9.tar.gz
+        dest: "{{sge_source_dir}}"
+        remote_src: yes
         extra_opts:
-          - --verbose
+          # - --verbose
           - --preserve-permissions
     - name: Run bootstrap scripts to install SGE
       shell: sh scripts/bootstrap.sh && ./aimk && ./aimk -man
       args:
-        chdir: "{{sge_root_dir}}/sge-8.1.9/source/"
+        chdir: "{{sge_source_dir}}/sge-8.1.9/source"
+
+    #needs to be fixed
+    - name: Set SGE root path
+      shell: "export SGE_ROOT={{sge_root_dir}}"
+
+    - name: Run SGE scripts
+      shell: echo Y | ./scripts/distinst -local -allall -libs -noexit
+      args:
+        chdir: "{{sge_source_dir}}/sge-8.1.9/source"
+
+    - name: Change file permissions for gridengine
+      shell: "chown -R sgeadmin.sgeadmin {{sge_root_dir}}"
