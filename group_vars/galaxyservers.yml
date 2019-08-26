@@ -10,7 +10,8 @@ uwsgi_socket: 127.0.0.1:8080
 install_path: /srv/galaxy
 
 #SGE
-sge_root_dir: /srv/sge
+sge_root_dir: /srv/gridengine
+sge_source_dir: /srv
 
 #Booleans
 install_nginx: true

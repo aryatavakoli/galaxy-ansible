@@ -162,10 +162,9 @@ $ cd bccdc-galay-ansible
 ```sh
 $ nano hosts
 ```
-Add hostnames here:
-```sh## <a name="-thanks"></a> Special Thanks
 
-###
+Add hostnames here:
+```sh
 [galaxyservers]
 galaxyservers.test.ca #Vagrant VM
 <Add Hostnames here>
