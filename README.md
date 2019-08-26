@@ -6,14 +6,14 @@ Uses Ansible to automatically deploy an Instance of Galaxy (galaxyproject.org) t
 
 Currently Functional Features:
 - [x] Galaxy
-- [x] miniconda
+- [x] Miniconda
 - [x] Tool-shed Imports
 - [x] PostgreSQL
-- [x] nginx
-- [x] certbot
-- [x] supervisor
-- [ ] Galaxy-tools (Functional but needs to be reworked)
-- [ ] SGE
+- [x] Nginx
+- [x] Certbot
+- [x] Supervisor
+- [x] Galaxy-tools (Functional but needs to be reworked)
+- [ ] Grid Engine
 - [ ] Interactive Enviroments
 - [ ] ProFTP
 - [ ] IRIDA Importer tool
@@ -125,7 +125,7 @@ Variable Name                                | Default Value                    
 
 ## <a name="-testing"></a> Testing
 
-Currently, testing is done via Vagrant. Installation of Vagrant, Ansible, and Virtualbox on your local machine can be found [here](https://github.com/aryatavakoli/kubernetes-vagrant)
+Currently, testing is done via Vagrant. Installation of Vagrant,Ansible,and Virtualbox can be found [here](https://github.com/aryatavakoli/kubernetes-vagrant)
 
 ### The Vagrantfile
 All configurations for the testing enviroment are found in the `Vagrantfile`.
