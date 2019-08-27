@@ -67,14 +67,11 @@
         dest: "{{sge_source_dir}}"
         remote_src: yes
         extra_opts:
-          # - --verbose
           - --preserve-permissions
     - name: Run bootstrap scripts to install SGE
       shell: sh scripts/bootstrap.sh && ./aimk && ./aimk -man
       args:
         chdir: "{{sge_source_dir}}/sge-8.1.9/source"
-
-    #needs to be fixed
 
     - name: Set SGE root path
       lineinfile:

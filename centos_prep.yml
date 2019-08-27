@@ -75,12 +75,3 @@
       become: yes
       timezone:
         name: America/Vancouver
-        
-    - name: Remove policycoreutils
-      yum:
-          name: policycoreutils-python
-          state: absent
-    - name: Install policycoreutils
-      yum:
-          name: policycoreutils-python
-          state: latest

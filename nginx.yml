@@ -1,5 +1,14 @@
 - name: Install Nginx
   hosts: galaxyservers
   become: yes
+  pre_tasks:
+    - name: Remove policycoreutils
+      yum:
+          name: policycoreutils-python
+          state: absent
+    - name: Reinstall policycoreutils
+      yum:
+          name: policycoreutils-python
+          state: latest
   roles:
     - galaxyproject.nginx
