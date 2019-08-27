@@ -1,0 +1,90 @@
+#https://biohpc.blogspot.com/2016/10/sge-installation-of-son-of-grid-engine.html
+- name: Install SGE
+  hosts: galaxyservers
+  become: yes
+  pre_tasks:
+    - name: Creates directory for SGE source
+      file:
+        path: "{{sge_source_dir}}"
+        state: directory
+    - name: Creates directory for SGE root
+      file:
+        path: "{{sge_root_dir}}"
+        state: directory
+    - name: Install required system packages
+      yum:
+        name: "{{packages}}"
+        update_cache: yes
+        state: latest
+      vars:
+        packages:
+          - jemalloc-devel
+          - csh
+          - openssl-devel
+          - ncurses-devel
+          - libXmu-devel
+          - hwloc-devel
+          - hwloc 
+          - hwloc-libs
+          - java-devel
+          - javacc
+          - motif-devel 
+          - libdb-devel
+          - ant-junit
+          - db4-utils
+          - perl-XML-Simple
+          - perl-Env
+          - motif-devel
+          - ksh
+          - xterm
+
+    - name: Ensure group sgeadmin exists
+      group:
+        name: sgeadmin
+        gid: 490
+        state: present
+    - name: Add the user 'sgeadmin' with a bash shell, add sgeadmin to sgeadmin group
+      user:
+        name: sgeadmin
+        uid: 495
+        shell: /bin/bash
+        groups: sgeadmin
+        comment: "SGE Admin"
+        create_home: yes
+        append: yes
+        system: yes
+    - name: Make sure group sgeadmin is in the sudoers configuration
+      lineinfile:
+        path: /etc/sudoers
+        state: present
+        regexp: '^%sgeadmin'
+        line: '%sgeadmin ALL=(ALL) NOPASSWD: ALL'
+        validate: visudo -cf %s
+  tasks:
+    - name: Get and Extract SGE tar fileE
+      unarchive:
+        src: https://arc.liv.ac.uk/downloads/SGE/releases/8.1.9/sge-8.1.9.tar.gz
+        dest: "{{sge_source_dir}}"
+        remote_src: yes
+        extra_opts:
+          - --preserve-permissions
+    - name: Run bootstrap scripts to install SGE
+      shell: sh scripts/bootstrap.sh && ./aimk && ./aimk -man
+      args:
+        chdir: "{{sge_source_dir}}/sge-8.1.9/source"
+
+    - name: Set SGE root path
+      lineinfile:
+        path: /etc/environment
+        line: "SGE_ROOT={{sge_root_dir}}"
+    
+    - name: Save Changes to /etc/environment
+      shell: exec bash
+
+    - name: Run SGE scripts
+      shell: echo Y | ./scripts/distinst -local -allall -libs -noexit
+      args:
+        chdir: "{{sge_source_dir}}/sge-8.1.9/source"
+
+    - name: Change file permissions for gridengine
+      shell: "chown -R sgeadmin.sgeadmin {{sge_root_dir}}"
