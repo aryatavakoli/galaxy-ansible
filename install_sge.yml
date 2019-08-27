@@ -75,8 +75,14 @@
         chdir: "{{sge_source_dir}}/sge-8.1.9/source"
 
     #needs to be fixed
+
     - name: Set SGE root path
-      shell: "export SGE_ROOT={{sge_root_dir}}"
+      lineinfile:
+        path: /etc/environment
+        line: "SGE_ROOT={{sge_root_dir}}"
+    
+    - name: Save Changes to /etc/environment
+      shell: exec bash
 
     - name: Run SGE scripts
       shell: echo Y | ./scripts/distinst -local -allall -libs -noexit
