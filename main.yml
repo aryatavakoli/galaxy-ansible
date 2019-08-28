@@ -5,6 +5,7 @@
 
 - name: Install SGE
   import_playbook: install_sge.yml
+  when: install_sge == true
 
 - name: Install PostgreSQL
   import_playbook: postgres.yml

@@ -24,12 +24,6 @@
   src: natefoo.postgresql_objects
   #version: 1.1
 
-- name: galaxyproject.slurm
-  src: galaxyproject.slurm
-
-- name: galaxyproject.repos
-  src: galaxyproject.repos
-
 - name: uchida.miniconda 
   src: uchida.miniconda
   #version: 0.3.0

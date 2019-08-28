@@ -15,10 +15,9 @@ sge_source_dir: /srv
 
 #Booleans
 install_nginx: true
-install_supervisor: true
 create_db: true
-install_miniconda: true
 sys_prep: true
+install_sge: true
 install_tools: no
 
 # Admin Credentials 
