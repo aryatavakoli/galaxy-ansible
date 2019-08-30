@@ -1,6 +1,6 @@
 
 - name: Prepare Linux Enviroment
-  import_playbook: centos_prep.yml
+  import_playbook: sys_prep.yml
   when: sys_prep == true
 
 - name: Install SGE
