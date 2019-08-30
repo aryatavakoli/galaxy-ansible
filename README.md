@@ -135,6 +135,7 @@ Variable Name                                | Default Value                    
 `sge_root_dir`                    | `/srv/grindengine`                                         | The root directory for the SGE to be installed to.
 `sge_source_dir`                  | `/srv`                                  | The directory that the SGE soruce code is extracted to.
 
+### Notes on NGINX
 If `install_nginx` to `false` then in `group_vars/galaxyservers`, then the variable `uwsgi_socket` should be changed from `127.0.0.1:<port_number>` to `0.0.0.0:<port_number>`. Also this line:
 ```
 galaxy_config:
