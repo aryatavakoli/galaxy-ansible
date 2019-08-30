@@ -107,8 +107,11 @@ These should be defined depending on your current Galaxy setup.
 Variable Name                                | Default Value                                                       | Usage
 ---                                          | ---                                                                 | ---
 `galaxy_create_user`                 | `true`                                                             | Whether or not to create user `galaxy_user`. Set to `false` if user is managed through something like LDAP and/or another module.
-`galaxy_tools_install_tools`                          | `yes`                                                             | Whether or not to install the tools listed in `galaxy_tool_list` via Ephemeris. This determies if the `galaxyproject.galaxy-tools` role should be run or skipped
-`create_db`                          | `false`                                                             | Determines if PostgreSQL should be installed on the server. This determines if `galaxyproject.postgresql` and `natefoo.postgresql_objects` roles are run or skipped.
+`install_tools`                          | `yes`                                                             | Whether or not to install the tools listed in `galaxy_tool_list` via Ephemeris. This determies if the `galaxyproject.galaxy-tools` role should be run or skipped
+`create_db`                          | `true`                                                             | Determines if PostgreSQL should be installed on the server. This determines if `galaxyproject.postgresql` and `natefoo.postgresql_objects` roles are run or skipped.
+`sys_prep`                          | `true`                                                             | Determines if the remote node should run `sys_prep.yml` Which installs requried packages and disables SElinux.
+`install_nginx`                          | `true`                                                             | Determines if the remote node should run `install_nginx.yml` Which installs nginx.
+
 
 ### Galaxy Variables
 
@@ -120,9 +123,36 @@ Variable Name                                | Default Value                    
 `galaxy_server_dir`                  | `{{galaxy_root}}/server`                                  | The directory that the Galaxy repo is checked out into, and that Galaxy is run from.
 `galaxy_commit_id`                     | `release_{{galaxy_release_number}}`                           | The branch of Galaxy to ensure is installed. It is better to just set `galaxy_release_number` and leave this as its default value unless the branch in not in the form of `release_xx.xx`.
 `galaxy_config_dir`                  | `{{galaxy_root}}/config`                                  | The directory containing all of the managed config files.
-`galaxy_database_connection`         | `postgresql:///{{galaxy_user_name}}?host=/var/run/postgresql` | The address to the main database for Galaxy to use.
+`galaxy_database_connection`         | `postgresql:///{{galaxy_user_name}}?host=/var/run/postgresql` | The address to the main database for Galaxy to use. If a database does not exist, Galaxy will create one.
 `galaxy_venv_dir`                           | `{{galaxy_root}}/venv`                                    | The location of the virtual environment Galaxy will run from within.
 
+### SGE Variables
+
+SGE's offical page can be found [here](https://arc.liv.ac.uk/trac/SGE)
+
+Variable Name                                | Default Value                                                       | Usage
+---                                          | ---                                                                 | ---
+`sge_root_dir`                    | `/srv/grindengine`                                         | The root directory for the SGE to be installed to.
+`sge_source_dir`                  | `/srv`                                  | The directory that the SGE soruce code is extracted to.
+
+If `install_nginx` to `false` then in `group_vars/galaxyservers`, then the variable `uwsgi_socket` should be changed from `127.0.0.1:<port_number>` to `0.0.0.0:<port_number>`. Also this line:
+```
+galaxy_config:
+  galaxy:
+        ...
+  uwsgi:
+    # Default values
+    socket: "{{uwsgi_socket}}"
+```
+should be changed to:
+```
+galaxy_config:
+  galaxy:
+        ...
+  uwsgi:
+    # Default values
+    http: "{{uwsgi_socket}}"
+```
 ## <a name="-testing"></a> Testing
 
 Currently, testing is done via Vagrant. Installation of Vagrant,Ansible,and Virtualbox can be found [here](https://github.com/aryatavakoli/kubernetes-vagrant)
@@ -131,7 +161,7 @@ Currently, testing is done via Vagrant. Installation of Vagrant,Ansible,and Virt
 All configurations for the testing enviroment are found in the `Vagrantfile`.
 
 ### Mapping IP Address and Hostname of the Vagrant VM
-This line has to be added to `etc/hosts`:
+This line has to be added to `/etc/hosts`:
 ```sh 
 192.168.50.12 galaxyservers.test.ca
 ```
